@@ -4,15 +4,15 @@
 # After bumping this package, restore the depends of browsh
 #
 pkgname=firefox-esr
-version=115.0.2
-revision=2
+version=115.11.0
+revision=1
 build_helper="rust"
 short_desc="Mozilla Firefox web browser - Extended Support Release"
 maintainer="Orphaned <orphan@voidlinux.org>"
 license="MPL-2.0, GPL-2.0-or-later, LGPL-2.1-or-later"
 homepage="https://www.mozilla.org/firefox/"
 distfiles="${MOZILLA_SITE}/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz"
-checksum=45723c83ea7dc318ec50d67eebf834163b626ec3924a3131fecddfc7268a95f5
+checksum=16be46f16a356a2b8bd3541805a24c8a2acf6f077cf8a65859689685c26025e0
 
 lib32disabled=yes
 
@@ -31,7 +31,7 @@ replaces="firefox>=0"
 provides="firefox-${version}_${revision}"
 
 build_options="alsa jack dbus pulseaudio xscreensaver sndio wayland lto clang"
-build_options_default="alsa jack dbus pulseaudio xscreensaver sndio wayland clang"
+build_options_default="alsa jack dbus pulseaudio xscreensaver sndio wayland lto clang"
 
 desc_option_lto="Enable Link Time Optimization"
 desc_option_clang="Build with clang"
@@ -118,8 +118,9 @@ do_build() {
 	fi
 
 	export AS="${CC}"
-	export CFLAGS="-O2"
-	export CXXFLAGS="-O2"
+	export CFLAGS="-O2 -march=sandybridge"
+	export CXXFLAGS="-O2 -march=sandybridge"
+	export RUSTC_OPT_LEVEL=2
 	export HOST_CFLAGS=""
 	export HOST_CXXFLAGS=""
 	export LDFLAGS="-Wl,-rpath=/usr/lib/firefox"
@@ -176,12 +177,15 @@ do_build() {
 	ac_add_options --disable-tests
 	ac_add_options --disable-crashreporter
 	ac_add_options --disable-updater
-	ac_add_options --disable-install-strip
-	ac_add_options --disable-strip
+	#ac_add_options --disable-install-strip
+	#ac_add_options --disable-strip
+	ac_add_options --disable-debug-symbols
 	ac_add_options --disable-profiling
 	$(disable_jemalloc)
 	$(disable_elfhack)
 	$(disable_webrtc)
+	unset MOZ_TELEMETRY_REPORTING
+	export LDFLAGS="$LDFLAGS -Wl,-z,pack-relative-relocs"
 
 	# XXX: wasi currently not ready
 	# ac_add_options --with-wasi-sysroot=/usr/share/wasi-sysroot
