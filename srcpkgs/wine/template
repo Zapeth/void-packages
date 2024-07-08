@@ -88,7 +88,8 @@ fi
 
 post_patch() {
 	if [ "${build_option_staging}" ]; then
-		"../wine-staging-${_pkgver}/staging/patchinstall.py" --all
+		# server-Stored_ACLs patchset doesnt cleanly apply for v9.13
+		"../wine-staging-${_pkgver}/staging/patchinstall.py" --all -W server-Stored_ACLs
 	fi
 }
 
