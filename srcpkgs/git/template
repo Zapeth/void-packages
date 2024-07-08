@@ -1,11 +1,12 @@
 # Template file for 'git'
 pkgname=git
 version=2.45.2
-revision=1
+revision=2
 hostmakedepends="asciidoc gettext perl pkg-config tk xmlto"
 makedepends="libglib-devel libcurl-devel libsecret-devel pcre2-devel tk-devel"
 # Required by https://
-depends="ca-certificates perl-Authen-SASL perl-MIME-tools perl-Net-SMTP-SSL"
+#depends="ca-certificates perl-Authen-SASL perl-MIME-tools perl-Net-SMTP-SSL"
+depends="ca-certificates"
 checkdepends="gnupg cvs cvsps2 perl-DBD-SQLite subversion subversion-perl
  perl-Term-ReadKey perl-CGI perl-IO-Tty"
 short_desc="Git Tree History Storage Tool"
@@ -27,10 +28,11 @@ do_configure() {
 	CC = $CC
 	AR = $AR
 	TAR = bsdtar
-	CFLAGS = $CFLAGS
+	CFLAGS = $CFLAGS -march=sandybridge
 	LDFLAGS = $LDFLAGS
 	USE_LIBPCRE2=Yes
 	NO_INSTALL_HARDLINKS=Yes
+	NO_PEARL=Yes
 	INSTALLDIRS=vendor
 	perllibdir=/usr/share/perl5/vendor_perl
 	PYTHON_PATH=/usr/bin/python3
@@ -54,6 +56,7 @@ do_configure() {
 
 do_build() {
 	make ${makejobs} all man
+	#make ${makejobs} profile man
 	make ${makejobs} -C contrib/contacts all git-contacts.1
 	make ${makejobs} -C contrib/diff-highlight all
 	make ${makejobs} -C contrib/subtree all man
@@ -74,6 +77,7 @@ do_check() {
 
 do_install() {
 	make DESTDIR=${DESTDIR} install install-man
+	#make DESTDIR=${DESTDIR} PROFILE=BUILD install install-man
 	vinstall contrib/completion/git-completion.bash 644 \
 		usr/share/bash-completion/completions git
 	vinstall contrib/completion/git-prompt.sh 644 usr/share/git
@@ -117,7 +121,7 @@ git-svn_package() {
 	depends="${sourcepkg}>=${version}_${revision} subversion-perl perl-Term-ReadKey"
 	short_desc+=" - Subversion support"
 	pkg_install() {
-		vmove "usr/share/perl5/vendor_perl/Git/SVN*"
+		#vmove "usr/share/perl5/vendor_perl/Git/SVN*"
 		vmove usr/libexec/git-core/git-svn
 		vmove usr/share/man/man1/git-svn.1
 	}

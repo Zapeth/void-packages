@@ -1,10 +1,13 @@
 # Template file for 'pipewire'
 pkgname=pipewire
 version=1.2.1
-revision=1
+revision=2
 build_style=meson
 configure_args="
  --auto-features=enabled
+ -Dc_args=-march=sandybridge
+ -Dcpp_args=-march=sandybridge
+ -Db_lto=true
  -Db_ndebug=false
  -Ddocs=enabled
  -Dman=enabled
@@ -32,8 +35,8 @@ makedepends="$(vopt_if sdl2 SDL2-devel) gst-plugins-base1-devel jack-devel
  $(vopt_if selinux libselinux-devel) libcamera-devel libcap-devel"
 depends="libspa-alsa>=${version}_${revision} libspa-audioconvert>=${version}_${revision}
  libspa-audiomixer>=${version}_${revision} libspa-control>=${version}_${revision}
- libspa-v4l2>=${version}_${revision} pulseaudio-utils virtual?pipewire-session-manager"
-checkdepends="pulseaudio-utils"
+ libspa-v4l2>=${version}_${revision} virtual?pipewire-session-manager"
+#checkdepends="pulseaudio-utils"
 short_desc="Server and user space API to deal with multimedia pipelines"
 maintainer="cinerea0 <cinerea0@protonmail.com>"
 license="MIT"

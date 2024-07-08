@@ -4,15 +4,15 @@
 # After bumping this package, restore the depends of browsh
 #
 pkgname=firefox-esr
-version=115.0.2
-revision=2
+version=115.13.0
+revision=1
 build_helper="rust"
 short_desc="Mozilla Firefox web browser - Extended Support Release"
 maintainer="Orphaned <orphan@voidlinux.org>"
 license="MPL-2.0, GPL-2.0-or-later, LGPL-2.1-or-later"
 homepage="https://www.mozilla.org/firefox/"
 distfiles="${MOZILLA_SITE}/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz"
-checksum=45723c83ea7dc318ec50d67eebf834163b626ec3924a3131fecddfc7268a95f5
+checksum=3fa20d1897100684d2560a193a48d4a413f31e61f2ed134713d607c5f30d5d5c
 
 lib32disabled=yes
 
@@ -20,18 +20,18 @@ hostmakedepends="autoconf213 unzip zip pkg-config perl python3 yasm rust cargo
  llvm clang lld nodejs cbindgen nasm which tar"
 makedepends="nss-devel libjpeg-turbo-devel gtk+3-devel icu-devel
  pixman-devel libevent-devel libnotify-devel libvpx-devel libwebp-devel
- libXrender-devel libXcomposite-devel libSM-devel libXt-devel rust-std
- libXdamage-devel freetype-devel
+ rust-std freetype-devel
  $(vopt_if alsa alsa-lib-devel) $(vopt_if dbus dbus-glib-devel)
  $(vopt_if pulseaudio pulseaudio-devel) $(vopt_if xscreensaver libXScrnSaver-devel)
  $(vopt_if sndio sndio-devel) $(vopt_if jack jack-devel)"
-depends="nss>=3.72 nspr>=4.32 desktop-file-utils hicolor-icon-theme"
+#libXrender-devel libXcomposite-devel libXt-devel libSM-devel libXdamage-devel
+depends="nss>=3.72 nspr>=4.32 desktop-file-utils hicolor-icon-theme libfido2"
 conflicts="firefox>=0"
 replaces="firefox>=0"
 provides="firefox-${version}_${revision}"
 
 build_options="alsa jack dbus pulseaudio xscreensaver sndio wayland lto clang"
-build_options_default="alsa jack dbus pulseaudio xscreensaver sndio wayland clang"
+build_options_default="alsa jack dbus pulseaudio wayland lto clang"
 
 desc_option_lto="Enable Link Time Optimization"
 desc_option_clang="Build with clang"
@@ -118,8 +118,9 @@ do_build() {
 	fi
 
 	export AS="${CC}"
-	export CFLAGS="-O2"
-	export CXXFLAGS="-O2"
+	export CFLAGS="-O2 -march=sandybridge"
+	export CXXFLAGS="-O2 -march=sandybridge"
+	export RUSTC_OPT_LEVEL=2
 	export HOST_CFLAGS=""
 	export HOST_CXXFLAGS=""
 	export LDFLAGS="-Wl,-rpath=/usr/lib/firefox"
@@ -176,12 +177,15 @@ do_build() {
 	ac_add_options --disable-tests
 	ac_add_options --disable-crashreporter
 	ac_add_options --disable-updater
-	ac_add_options --disable-install-strip
-	ac_add_options --disable-strip
+	#ac_add_options --disable-install-strip
+	#ac_add_options --disable-strip
+	ac_add_options --disable-debug-symbols
 	ac_add_options --disable-profiling
 	$(disable_jemalloc)
 	$(disable_elfhack)
 	$(disable_webrtc)
+	unset MOZ_TELEMETRY_REPORTING
+	export LDFLAGS="$LDFLAGS -Wl,-z,pack-relative-relocs"
 
 	# XXX: wasi currently not ready
 	# ac_add_options --with-wasi-sysroot=/usr/share/wasi-sysroot
@@ -212,7 +216,7 @@ do_build() {
 	ac_add_options $(vopt_enable jack)
 	ac_add_options $(vopt_enable pulseaudio)
 	ac_add_options $(vopt_enable sndio)
-	ac_add_options --enable-default-toolkit=$(vopt_if wayland 'cairo-gtk3-wayland' 'cairo-gtk3')
+	ac_add_options --enable-default-toolkit=$(vopt_if wayland 'cairo-gtk3-wayland-only' 'cairo-gtk3')
 
 	MOZ_APP_REMOTINGNAME=Firefox
 	!
@@ -255,6 +259,4 @@ do_install() {
 
 	# https://bugzilla.mozilla.org/show_bug.cgi?id=658850
 	ln -sf firefox ${DESTDIR}/usr/lib/firefox/firefox-bin
-
-	vbin ${FILESDIR}/firefox-wayland
 }

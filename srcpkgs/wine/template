@@ -1,7 +1,7 @@
 # Template file for 'wine'
 pkgname=wine
 version=9.13
-revision=1
+revision=2
 _pkgver=${version/r/-r}
 create_wrksrc=yes
 build_wrksrc=wine-${_pkgver}
@@ -20,7 +20,7 @@ checksum="d79651d0fe38defe84cbd9e345f001c02ffc125979e29ebf203d6d487abf7348
 # check for updates to these packages when updating wine
 
 build_options="mingw staging xshm"
-build_options_default="mingw xshm"
+build_options_default="mingw staging xshm"
 desc_option_mingw="Use the MinGW cross compiler to build WinPE DLLs"
 desc_option_staging="Apply the wine-staging patchset"
 desc_option_xshm="Enable support for the X Shared Memory Extension"
@@ -74,10 +74,10 @@ if [ "$XBPS_LIBC" = "glibc" ]; then
 	hostmakedepends+=" prelink"
 fi
 
-if [ "$XBPS_TARGET_LIBC" = "musl" ]; then
-	configure_args+=" --enable-archs=i386,x86_64"
-	makedepends+=" cross-i686-w64-mingw32"
-fi
+#if [ "$XBPS_TARGET_LIBC" = "musl" ]; then
+configure_args+=" --enable-archs=i386,x86_64"
+makedepends+=" cross-i686-w64-mingw32"
+#fi
 
 _wine_libexec="/usr/libexec/wine"
 nopie_files="${_wine_libexec}/wine${_wine_suffix}"

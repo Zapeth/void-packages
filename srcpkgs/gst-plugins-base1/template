@@ -1,16 +1,16 @@
 # Template file for 'gst-plugins-base1'
 pkgname=gst-plugins-base1
 version=1.24.4
-revision=1
+revision=2
 build_style=meson
 build_helper="gir"
-configure_args="-Dtremor=disabled -Dexamples=disabled -Ddoc=disabled
+configure_args="-Dtremor=disabled -Dexamples=disabled -Ddoc=disabled -Dlibvisual=disabled -Dc_args=-march=sandybridge -Dcpp_args=-march=sandybridge -Db_lto=true
  $(vopt_feature cdparanoia cdparanoia) $(vopt_feature gir introspection)
  $(vopt_feature sndio sndio)"
 hostmakedepends="gettext pkg-config glib-devel orc $(vopt_if wayland wayland-devel)"
 makedepends="gstreamer1-devel glib-devel libxml2-devel pango-devel
  cairo-devel liboil-devel alsa-lib-devel libXv-devel libXext-devel
- libvisual-devel libgudev-devel libtheora-devel libvorbis-devel
+ libgudev-devel libtheora-devel libvorbis-devel
  libSM-devel orc-devel $(vopt_if cdparanoia libcdparanoia-devel)
  opus-devel MesaLib-devel $(vopt_if sndio sndio-devel) graphene-devel
  $(vopt_if wayland 'wayland-devel wayland-protocols')"
@@ -25,7 +25,7 @@ distfiles="https://gstreamer.freedesktop.org/src/gst-plugins-base/gst-plugins-ba
 checksum=09f4ddf246eeb819da1494ce336316edbbcb28fdff3ee2f9804891e84df39b2a
 
 build_options="cdparanoia gir sndio wayland"
-build_options_default="cdparanoia gir wayland"
+build_options_default="gir wayland"
 desc_option_sndio="Enable sndio support (unsupported, known to be problematic)"
 
 # Remove sndio if not upstreamed
