@@ -1,0 +1,50 @@
+- checkout: git clone <custom-void-packages> -b dev
+- pre-req: xbps-install -S bash
+- build: xbps-src pkg <pkg>
+- clean: xbps-src clean <pkg>
+- packages:
+firefox-esr git pipewire gst-plugins-base1 mpv
+
+# tocheck: is it safe to remove x11 (and other) build dependencies for some of these?
+gnuplot mpd SDL2 pango gtk+3 bemenu ffmpeg6
+
+# notes:
+- patch files with 'diff -u srcdir/{old} srcdir/{new} >> {name}.patch'
+
+# tocheck:
+libX11
+libXau
+libXdmcp
+libXext
+libXfixes
+libXfont2
+libXpm
+libXrender
+libXt
+libXtst
+libXv
+libXxf86vm
+libcap (-> libcap-ng)
+libdb
+#libpulseaudio
+libsndfile
+libsndio
+libspa-v4l2
+libz3
+lzo
+mesa-libgallium
+#ncurses-base
+ncurses-libs
+orc
+popt
+run-parts
+speexdsp
+swaybg
+v4l-utils
+xcb-util-errors
+xcb-util-renderutil
+xcb-util-wm
+#xkbcomp
+xorg-server-common
+#xorg-server-xwayland
+zziplib

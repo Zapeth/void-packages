@@ -1,0 +1,11 @@
+--- bemenu-0.6.23/GNUmakefile	2024-07-19 04:12:27.000000000 +0000
++++ bemenu-0.6.23/GNUmakefile2	2025-01-10 10:55:43.134221323 +0000
+@@ -24,7 +24,7 @@
+ pkgconfigs = bemenu.pc
+ bins = bemenu bemenu-run
+ mans = bemenu.1
+-renderers = bemenu-renderer-x11.so bemenu-renderer-curses.so bemenu-renderer-wayland.so
++renderers = bemenu-renderer-wayland.so
+ all: $(bins) $(renderers) $(mans)
+ clients: $(bins)
+ curses: bemenu-renderer-curses.so

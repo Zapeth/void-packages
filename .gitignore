@@ -12,6 +12,7 @@
 !/.mailmap
 !/CONTRIBUTING.md
 !/COPYING
+!/custom-pkgs.txt
 !/Manual.md
 !/README.md
 !/common

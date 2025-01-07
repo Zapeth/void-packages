@@ -4,9 +4,9 @@ version=6.0.2
 revision=1
 configure_args="--with-readline=builtin
  --with-gpic --with-metapost --with-metafont"
-hostmakedepends="pkg-config lua52 zlib-devel libX11-devel
+hostmakedepends="pkg-config zlib-devel libX11-devel
  cairo-devel pango-devel"
-makedepends="zlib-devel libX11-devel gd-devel lua52-devel
+makedepends="zlib-devel libX11-devel gd-devel
  cairo-devel pango-devel"
 depends="gnuplot-common>=${version}_${revision}"
 short_desc="Command-line driven graphing utility"
@@ -86,8 +86,8 @@ gnuplot-common_package() {
 	pkg_install() {
 		vmove usr/share/gnuplot/${version%.*}/PostScript
 		vmove usr/share/gnuplot/${version%.*}/app-defaults
-		vmove usr/share/gnuplot/${version%.*}/js
-		vmove usr/share/gnuplot/${version%.*}/lua
+		#vmove usr/share/gnuplot/${version%.*}/js
+		#vmove usr/share/gnuplot/${version%.*}/lua
 		vmove usr/share/gnuplot/${version%.*}/*.gp
 		vmove usr/share/gnuplot/${version%.*}/gnuplot.gih
 		vmove usr/share/gnuplot/${version%.*}/gnuplotrc

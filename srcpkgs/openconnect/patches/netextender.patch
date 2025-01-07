@@ -1,0 +1,1150 @@
+commit 3c5e869c91d4f11fc6fed08597223ccc77acb20b
+Author: asd <>
+Date:   Wed Apr 2 13:07:29 2025 +0000
+
+    manual nx patch
+
+diff --git a/Makefile.am b/Makefile.am
+index e39c6ed4..c018dac8 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -40,6 +40,7 @@ library_srcs = ssl.c http.c textbuf.c http-auth.c auth-common.c \
+ 	ntlm.c digest.c mtucalc.c openconnect-internal.h
+ lib_srcs_cisco = auth.c cstp.c hpke.c multicert.c
+ lib_srcs_juniper = oncp.c lzo.c auth-juniper.c
++lib_srcs_nx = nx.c
+ lib_srcs_pulse = pulse.c
+ lib_srcs_globalprotect = gpst.c win32-ipicmp.h auth-globalprotect.c
+ lib_srcs_array = array.c
+@@ -55,7 +56,7 @@ library_srcs += $(lib_srcs_juniper) $(lib_srcs_cisco) $(lib_srcs_oath) \
+ 		$(lib_srcs_globalprotect) $(lib_srcs_pulse) \
+ 		$(lib_srcs_oidc) $(lib_srcs_ppp) $(lib_srcs_nullppp) \
+ 		$(lib_srcs_f5) $(lib_srcs_fortinet) $(lib_srcs_json) \
+-		$(lib_srcs_array)
++		$(lib_srcs_array) $(lib_srcs_nx)
+ 
+ lib_srcs_gnutls = gnutls.c gnutls_tpm.c gnutls_tpm2.c
+ lib_srcs_openssl = openssl.c openssl-pkcs11.c
+diff --git a/array.c b/array.c
+index 9d8031a5..13dbe3be 100644
+--- a/array.c
++++ b/array.c
+@@ -483,7 +483,7 @@ static int parse_interface_info(struct openconnect_info *vpninfo,
+ 	}
+ 
+ 	if (!ret)
+-		ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info);
++		ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info, 0);
+  out:
+ 	if (ret) {
+ 		free_optlist(new_opts);
+diff --git a/auth-html.c b/auth-html.c
+index b23636aa..9d46b67e 100644
+--- a/auth-html.c
++++ b/auth-html.c
+@@ -166,6 +166,7 @@ int parse_select_node(struct openconnect_info *vpninfo, struct oc_auth_form *for
+ 	opt->form.label = strdup(opt->form.name);
+ 	opt->form.type = OC_FORM_OPT_SELECT;
+ 	if ((vpninfo->proto->proto == PROTO_NC && !strcmp(opt->form.name, "realm")) ||
++	    (vpninfo->proto->proto == PROTO_NX && !strcmp(opt->form.name, "domain")) ||
+ 	    (vpninfo->proto->proto == PROTO_F5 && !strcmp(opt->form.name, "domain")))
+ 		form->authgroup_opt = opt;
+ 
+diff --git a/cstp.c b/cstp.c
+index d0cec8b7..09381c6d 100644
+--- a/cstp.c
++++ b/cstp.c
+@@ -646,7 +646,7 @@ static int start_cstp_connection(struct openconnect_info *vpninfo, int strap_rek
+ 	}
+ 	new_ip_info.mtu = mtu;
+ 
+-	ret = install_vpn_opts(vpninfo, new_cstp_opts, &new_ip_info);
++	ret = install_vpn_opts(vpninfo, new_cstp_opts, &new_ip_info, 0);
+ 	if (ret) {
+ 	err:
+ 		free_optlist(new_cstp_opts);
+@@ -802,7 +802,7 @@ int decompress_and_queue_packet(struct openconnect_info *vpninfo, int compr_type
+ 	   space to handle that */
+ 	int receive_mtu = MAX(16384, vpninfo->ip_info.mtu);
+ 	struct pkt *new = alloc_pkt(vpninfo, receive_mtu);
+-	const char *comprname = "";
++	const char *comprname;
+ 
+ 	if (!new)
+ 		return -ENOMEM;
+diff --git a/f5.c b/f5.c
+index 634a95f0..644a05bc 100644
+--- a/f5.c
++++ b/f5.c
+@@ -619,7 +619,7 @@ static int parse_options(struct openconnect_info *vpninfo, char *buf, int len,
+ 	}
+ 	buf_free(domains);
+ 
+-	ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info);
++	ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info, 1);
+ 
+ 	if (ret || (*ipv4 < 1 && *ipv6 < 1) || !*ur_z || !*session_id) {
+ 		free_optlist(new_opts);
+diff --git a/fortinet.c b/fortinet.c
+index 20fc68ee..27ad3ca8 100644
+--- a/fortinet.c
++++ b/fortinet.c
+@@ -594,7 +594,7 @@ static int parse_fortinet_xml_config(struct openconnect_info *vpninfo, char *buf
+ 		new_ip_info.domain = add_option_steal(&new_opts, "search", &domains->data);
+ 	}
+ 
+-	ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info);
++	ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info, 0);
+ 	if (ret) {
+ 		free_optlist(new_opts);
+                 free_split_routes(&new_ip_info);
+diff --git a/gpst.c b/gpst.c
+index 37235c1f..e134bb95 100644
+--- a/gpst.c
++++ b/gpst.c
+@@ -622,7 +622,7 @@ static int gpst_parse_config_xml(struct openconnect_info *vpninfo, xmlNode *xml_
+ 
+ 	free(s);
+ 
+-	ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info);
++	ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info, 0);
+ 	if (ret) {
+ 	err:
+ 		free_optlist(new_opts);
+@@ -644,7 +644,7 @@ static int gpst_get_config(struct openconnect_info *vpninfo)
+ 
+ 	/* submit getconfig request */
+ 	buf_append(request_body, "client-type=1&protocol-version=p1&internal=no");
+-	append_opt(request_body, "app-version", vpninfo->csd_ticket ? : "5.1.5-8");
++	append_opt(request_body, "app-version", vpninfo->csd_ticket ? : "6.1.2-82");
+ 	append_opt(request_body, "ipv6-support", vpninfo->disable_ipv6 ? "no" : "yes");
+ 	append_opt(request_body, "clientos", gpst_os_name(vpninfo));
+ 	append_opt(request_body, "os-version", vpninfo->platname);
+diff --git a/library.c b/library.c
+index 840846de..5841f963 100644
+--- a/library.c
++++ b/library.c
+@@ -244,6 +244,18 @@ static const struct vpn_proto openconnect_protos[] = {
+ 		.udp_shutdown = dtls_shutdown,
+ 		.udp_catch_probe = fortinet_dtls_catch_svrhello,
+ #endif
++	}, {
++		.name = "nx",
++		.pretty_name = N_("SonicWall NetExtender"),
++		.description = N_("Compatible with SonicWall NetExtender SSL VPN"),
++		.proto = PROTO_NX,
++		.flags = OC_PROTO_PROXY,
++		.vpn_close_session = nx_bye,
++		.tcp_connect = nx_connect,
++		.tcp_mainloop = ppp_tcp_mainloop,
++		.add_http_headers = nx_common_headers,
++		.obtain_cookie = nx_obtain_cookie,
++		.secure_cookie = "swap",
+ 	}, {
+ 		.name = "nullppp",
+ 		.pretty_name = N_("PPP over TLS"),
+@@ -497,16 +509,16 @@ void free_optlist(struct oc_vpn_option *opt)
+ }
+ 
+ int install_vpn_opts(struct openconnect_info *vpninfo, struct oc_vpn_option *opt,
+-		     struct oc_ip_info *ip_info)
++		     struct oc_ip_info *ip_info, int allow_no_ip)
+ {
+ 	/* XX: remove protocol-specific exceptions here, once we can test them
+-	 * with F5 reconnections in addition to Juniper reconnections. See:
++	 * with F5 and NX reconnections in addition to Juniper reconnections. See:
+ 	 * https://gitlab.com/openconnect/openconnect/-/merge_requests/293#note_702388182
+ 	 */
+ 	if (!ip_info->addr && !ip_info->addr6 && !ip_info->netmask6) {
+-		if (vpninfo->proto->proto == PROTO_F5) {
+-			/* F5 doesn't get its IP address until it actually establishes the
+-			 * PPP connection. */
++		if (allow_no_ip) {
++			/* Some protocols, such as F5 and NX don't get their IP address
++			 * until they actually establish the PPP connection. */
+ 		} else if (vpninfo->proto->proto == PROTO_NC && vpninfo->ip_info.addr) {
+ 			/* Juniper doesn't necessarily resend the Legacy IP address in the
+ 			 * event of a rekey/reconnection. */
+diff --git a/nx.c b/nx.c
+new file mode 100644
+index 00000000..b42f7ef2
+--- /dev/null
++++ b/nx.c
+@@ -0,0 +1,629 @@
++/*
++ * OpenConnect (SSL + DTLS) VPN client
++ *
++ * Copyright © 2020-2021 Andreas Gnau, Daniel Lenski
++ *
++ * Author: Andreas Gnau <rondom@rondom.de>, Daniel Lenski <dlenski@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public License
++ * version 2.1, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ */
++
++#include <config.h>
++
++#include <ctype.h>
++#include <errno.h>
++#include <libxml/HTMLparser.h>
++#include <libxml/HTMLtree.h>
++
++#include "openconnect-internal.h"
++
++static char const ipv4_default_route[] = "0.0.0.0/0.0.0.0";
++static char const ipv6_default_route[] = "::/0";
++
++static struct nx_proto_data *reset_nx_proto_data(struct openconnect_info *vpninfo)
++{
++	memset(&vpninfo->proto_data.nx, 0, sizeof(vpninfo->proto_data.nx));
++	vpninfo->proto_data.nx.password_expiration_days = INT_MIN;
++	return &vpninfo->proto_data.nx;
++}
++
++static int nx_header_cb(struct openconnect_info *vpninfo, char *header, char *value)
++{
++	struct nx_proto_data *nx_response = &vpninfo->proto_data.nx;
++	if (!strcmp(header, "X-NE-message")) {
++		nx_response->message = strdup(value);
++		if (!nx_response->message)
++			return 1;
++	} else if (!strcmp(header, "X-NE-pwdexpdays"))
++		nx_response->password_expiration_days = atoi(value);
++	else if (!strcmp(header, "X-NE-maychangepwd"))
++		nx_response->may_change_password = 1;
++	else if (!strcmp(header, "X-NE-tf")) {
++		if (!strcmp(value, "1"))
++			nx_response->token_auth = 1;
++	} else if (!strcmp(header, "X-NE-saml")) {
++		if (!strcmp(value, "authType:SAML"))
++			nx_response->saml_auth = 1;
++	} else if (!strcmp(header, "X-NE-pda"))
++		nx_response->pda = 1;
++	else if (!strncmp(header, "X-NE-", 5)) {
++		vpn_progress(vpninfo, PRG_INFO, _("Unknown header %s.\n"), header);
++		vpn_progress(vpninfo, PRG_INFO, _("Please report this to <openconnect-devel@lists.infradead.org>.\n"));
++	}
++	return 0;
++}
++
++static int store_cookie_if_valid(struct openconnect_info *vpninfo)
++{
++	struct oc_vpn_option *cookie;
++	struct oc_text_buf *buf;
++	int ret = 1;
++
++	for (cookie = vpninfo->cookies; cookie; cookie = cookie->next) {
++		if (strcmp(cookie->option, "swap") == 0) {
++			buf = buf_alloc();
++			buf_append(buf, "%s", cookie->value);
++			if (!buf_error(buf)) {
++				vpninfo->cookie = buf->data;
++				buf->data = NULL;
++				ret = 0;
++			}
++			buf_free(buf);
++		}
++	}
++	return ret;
++}
++
++int nx_obtain_cookie(struct openconnect_info *vpninfo)
++{
++	int ret;
++	struct oc_text_buf *resp_buf = NULL;
++	xmlDocPtr doc = NULL;
++	xmlNodePtr node;
++	struct oc_auth_form *form = NULL;
++	char *form_id = NULL;
++
++	resp_buf = buf_alloc();
++	if (buf_error(resp_buf)) {
++		ret = buf_error(resp_buf);
++		goto out;
++	}
++	vpninfo->urlpath = strdup("cgi-bin/welcome");
++	while (1) {
++		char *form_buf = NULL;
++		struct oc_text_buf *url;
++		struct nx_proto_data *nx_response = reset_nx_proto_data(vpninfo);
++		if (resp_buf && resp_buf->pos)
++			ret = do_https_request(vpninfo, "POST", "application/x-www-form-urlencoded", resp_buf,
++					       &form_buf, nx_header_cb, 0);
++		else
++			ret = do_https_request(vpninfo, "GET", NULL, NULL, &form_buf, nx_header_cb, 0);
++
++		/* In case of SAML, we get Content-Length: 0 and status 200,
++		 * which should not be an issue, but do_https_request errors
++		 * in this case. Not sure, if that is intended behaviour.
++		 */
++		if (ret < 0 && !nx_response->saml_auth)
++			break;
++
++		if (nx_response->token_auth) {
++			vpn_progress(vpninfo, PRG_ERR, _("NetExtender OTP authentication is not supported, yet.\n"));
++			vpn_progress(vpninfo, PRG_INFO,
++				     _("Please report this to <openconnect-devel@lists.infradead.org>.\n"));
++			ret = -EINVAL;
++			break;
++		}
++		if (nx_response->saml_auth) {
++			vpn_progress(vpninfo, PRG_ERR, _("NetExtender SAML authentication is not supported, yet.\n"));
++			vpn_progress(vpninfo, PRG_INFO,
++				     _("Please report this to <openconnect-devel@lists.infradead.org>.\n"));
++			ret = -EINVAL;
++			break;
++		}
++		if (nx_response->password_expiration_days != INT_MIN)
++			vpn_progress(vpninfo, PRG_INFO, _("Password expires in %d days.\n"),
++				     nx_response->password_expiration_days);
++		if (nx_response->may_change_password)
++			vpn_progress(vpninfo, PRG_INFO, _("Server reports that changing the password is possible.\n"));
++		if (nx_response->pda) {
++			vpn_progress(vpninfo, PRG_INFO,
++				     _("NetExtender PDA (Personal Device Authorization) is not fully supported.\n"));
++			vpn_progress(vpninfo, PRG_INFO,
++				     _("Please report this to <openconnect-devel@lists.infradead.org>.\n"));
++		}
++		if (nx_response->message) {
++			vpn_progress(vpninfo, PRG_ERR, "Message from server: %s\n", nx_response->message);
++			ret = -EINVAL;
++			break;
++		}
++
++		url = buf_alloc();
++		buf_append(url, "https://%s", vpninfo->hostname);
++		if (vpninfo->port != 443)
++			buf_append(url, ":%d", vpninfo->port);
++		buf_append(url, "/");
++		if (vpninfo->urlpath)
++			buf_append(url, "%s", vpninfo->urlpath);
++
++		if (buf_error(url)) {
++			free(form_buf);
++			ret = buf_free(url);
++			break;
++		}
++		if (!store_cookie_if_valid(vpninfo)) {
++			buf_free(url);
++			free(form_buf);
++			ret = 0;
++			break;
++		}
++		doc = htmlReadMemory(form_buf, ret, url->data, NULL,
++				     HTML_PARSE_RECOVER | HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET);
++		buf_free(url);
++		free(form_buf);
++		if (!doc) {
++			vpn_progress(vpninfo, PRG_ERR, _("Failed to parse HTML document\n"));
++			ret = -EINVAL;
++			break;
++		}
++
++		buf_truncate(resp_buf);
++
++		node = find_form_node(doc);
++		if (!node) {
++			vpn_progress(vpninfo, PRG_ERR, _("Failed to find or parse web form in login page\n"));
++			ret = -EINVAL;
++			break;
++		}
++		free(form_id);
++		form_id = (char *)xmlGetProp(node, (unsigned char *)"name");
++		if (!form_id) {
++			vpn_progress(vpninfo, PRG_ERR, _("Encountered form with no ID\n"));
++			goto dump_form;
++		} else if (!strcmp(form_id, "Login")) {
++			form = parse_form_node(vpninfo, node, "loginButton", NULL);
++
++			if (!form) {
++				ret = -EINVAL;
++				break;
++			}
++		} else {
++			vpn_progress(vpninfo, PRG_ERR, _("Unknown form ID '%s'\n"), form_id);
++		dump_form:
++			vpn_progress(vpninfo, PRG_ERR, _("Dumping unknown HTML form:\n"));
++			htmlNodeDumpFileFormat(stderr, node->doc, node, NULL, 1);
++			ret = -EINVAL;
++			break;
++		}
++
++		do {
++			ret = process_auth_form(vpninfo, form);
++		} while (ret == OC_FORM_RESULT_NEWGROUP);
++		if (ret)
++			goto out;
++
++		append_form_opts(vpninfo, form, resp_buf);
++		ret = buf_error(resp_buf);
++		if (ret)
++			break;
++
++		vpninfo->redirect_url = form->action;
++		form->action = NULL;
++		free_auth_form(form);
++		form = NULL;
++		handle_redirect(vpninfo);
++	}
++out:
++	if (doc)
++		xmlFreeDoc(doc);
++	free(form_id);
++	if (form)
++		free_auth_form(form);
++	buf_free(resp_buf);
++	free(vpninfo->urlpath);
++	vpninfo->urlpath = NULL;
++	free(vpninfo->proto_data.nx.message);
++	vpninfo->proto_data.nx.message = NULL;
++	return ret;
++}
++
++void nx_common_headers(struct openconnect_info *vpninfo, struct oc_text_buf *buf)
++{
++	http_common_headers(vpninfo, buf);
++	/*
++	 * Apparently X-NE-SESSIONPROMPT: true seems to be needed in some rare (?)
++	 * situations, where the tunnel will come up but no packets are
++	 * transferred. See:
++	 * https://github.com/abrasive/nxBender/commit/454dedc6c72fc62eedb7be18e62c6b7ee5f82bb3
++	 *
++	 * Of all the clients tested, ONLY NetExtender for Windows sends this header...
++	 */
++	buf_append(buf, "X-NE-SESSIONPROMPT: true\r\n");
++}
++
++/*
++ * Trim any trailing blanks from key and
++ * detect HTML in a roundabout way
++ * by validating the key for acceptable characters
++ */
++static int validate_and_trim_key(char const **key, int *key_len)
++{
++	char const *k = *key;
++	int i;
++	while (isblank(k[*key_len - 1]))
++		*key_len -= 1;
++
++	for (i = 0; i < *key_len; i++) {
++		if (!isalnum(k[i]) && k[i] != '.' && k[i] != '_') {
++			return -EINVAL;
++		}
++	}
++	return 0;
++}
++
++/*
++ * first remove blanks in front,
++ * then remove optional trailing semicolon and enclosing quotes
++ */
++static void trim_value(char const **value, int *value_len)
++{
++	while (isblank(**value))
++		(*value)++;
++
++	if (*(*value + *value_len - 1) == ';') {
++		*value_len -= 1;
++	}
++
++	if (**value == '"' && *(*value + *value_len - 1) == '"') {
++		(*value)++;
++		*value_len -= 2;
++	}
++}
++
++/*
++ * allocates cfg_key and cfg_value,
++ * leaves line intact so it can be printed in case of failure
++ */
++static int parse_connection_info_line(struct openconnect_info *vpninfo, char const *line, int const line_len,
++				      char **cfg_key, char **cfg_value)
++{
++	/*
++	<html><head><title>SonicWALL - Virtual Office</title><meta http-equiv='pragma' content='no-cache'><meta http-equiv='cache-control' content='no-cache'><meta http-equiv='cache-control' content='must-revalidate'><meta http-equiv='Content-Type' content='text/html;charset=UTF-8'><link href='/styleblueblackgrey.css' rel=stylesheet type='text/css'><script>function neLauncherInit(){
++	NELaunchX1.userName = "someUsername";
++	NELaunchX1.domainName = "LocalDomain";
++	SessionId = QkMO6MFoXUdjMiCNLyakRw==;
++	Route = 1.2.3.0/255.255.255.0
++	Route = 4.5.6.0/255.255.255.0
++	Ipv6Route = dead:beef:f00d:20::/64
++	Ipv6Route = dead:beef:f00d:20::/64
++	dns1 = 1.2.3.4
++	dns2 = 4.5.6.7
++	ipv6Support = yes
++	GlobalIPv6Addr = dead:beef:f00d:1::1234
++	dnsSuffix = example.com
++	dnsSuffixes =example.com
++	pppFrameEncoded = 0;
++	PppPref = async
++	TunnelAllMode = 0;
++	ExitAfterDisconnect = 0;
++	UninstallAfterExit = 0;
++	NoProfileCreate = 0;
++	AllowSavePassword = 0;
++	AllowSaveUser = 1;
++	AllowSavePasswordInKeychain = 0
++	AllowSavePasswordInKeystore = 0
++	ClientIPLower = "1.2.3.123";
++	ClientIPHigh = "1.2.3.234";
++	}</script></head></html>
++	 */
++	char const *key = NULL, *value = NULL;
++	int key_len, value_len;
++	char *equal_sign;
++	*cfg_key = NULL;
++	*cfg_value = NULL;
++	/*
++	 * The response is HTML and pretty inconsistent.
++	 * Try to parse every line on a best-effort basis.
++	 * - actual data is enclosed in a script-tag on some servers, on others they are not
++	 * - keys are in one of the following forms delimited by newlines:
++	 *    - Key = Value
++	 *    - Key =Value
++	 *    - Key = Value;
++	 *    - Key = "Value"
++	 *    - Key = "Value";
++	 * - One server might use any of the above in the same response
++	 *   (with/without quotes, with/without trailing semicolon,
++	 *    with/without space around equals-sign)
++	 */
++
++	equal_sign = strchr(line, '=');
++	if (!equal_sign)
++		return -EINVAL;
++
++	key = line;
++	key_len = equal_sign - key;
++	if (validate_and_trim_key(&key, &key_len))
++		return -EINVAL;
++
++	value = equal_sign + 1;
++	value_len = line_len - (value - line);
++	trim_value(&value, &value_len);
++
++	*cfg_value = strndup(value, value_len);
++	*cfg_key = strndup(key, key_len);
++	if (!*cfg_key || !*cfg_value) {
++		free(*cfg_key);
++		free(*cfg_value);
++		return -ENOMEM;
++	}
++	return 0;
++}
++
++static struct oc_split_include *add_split_include(struct oc_ip_info *new_ip_info,
++						  char const *route)
++{
++	struct oc_split_include *include = malloc(sizeof(*include));
++	if (!include)
++		return NULL;
++
++	include->route = route;
++	include->next = new_ip_info->split_includes;
++	new_ip_info->split_includes = include;
++	return include;
++}
++
++/*
++ * Takes ownership of key and value
++ * We behave like CSTP — create a linked list in vpninfo->cstp_options
++ * with the strings containing the information we got from the server,
++ * and oc_ip_info contains const copies of those pointers.
++ * Takes care of freeing if key is not added to vpninfo->cstp_options.
++ */
++static int populate_vpninfo(struct openconnect_info *vpninfo, struct oc_vpn_option **new_opts,
++			    struct oc_ip_info *new_ip_info, char *key, char *value)
++{
++	if (strcmp(key, "Route") == 0 || strcmp(key, "Ipv6Route") == 0) {
++		add_split_include(new_ip_info, add_option_steal(new_opts, key, &value));
++	} else if (strcmp(key, "dns1") == 0) {
++		new_ip_info->dns[0] = add_option_steal(new_opts, key, &value);
++	} else if (strcmp(key, "dns2") == 0) {
++		new_ip_info->dns[1] = add_option_steal(new_opts, key, &value);
++	} else if (strcmp(key, "GlobalIPv6Addr") == 0) {
++		new_ip_info->addr6 = add_option_steal(new_opts, key, &value);
++	} else if (strcmp(key, "dnsSuffix") == 0) {
++		if (new_ip_info->domain) {
++			vpn_progress(vpninfo, PRG_DEBUG,
++				     _("Not overwriting DNS domains with 'dnsSuffix', "
++				       "because value from dnsSuffixes take precedence"));
++			free(key);
++			free(value);
++			return 0;
++		}
++		new_ip_info->domain = add_option_steal(new_opts, key, &value);
++	} else if (strcmp(key, "dnsSuffixes") == 0) {
++		new_ip_info->domain = add_option_steal(new_opts, key, &value);
++	} else {
++		/* going to throw away key and value for the following keys */
++		if (strcmp(key, "NX_TUNNEL_PROTO_VER") == 0) {
++			if (strcmp(value, "2.0") != 0)
++				vpn_progress(vpninfo, PRG_INFO,
++					     _("Unknown NX tunnel protocol version '%s'.\n"
++					       "Please report this to <openconnect-devel@lists.infradead.org>.\n"),
++					     value);
++
++		} else if (strcmp(key, "TunnelAllMode") == 0) {
++			if (strcmp(value, "1") == 0) {
++				add_split_include(new_ip_info, ipv4_default_route);
++				if (new_ip_info->addr6) {
++					add_split_include(new_ip_info, ipv6_default_route);
++				}
++			}
++		} else if (strcmp(key, "SessionId") == 0) {
++			/* separate in order to not print out secrets in message below */
++		} else if (strcmp(key, "NELaunchX1.userName") == 0 ||
++			   strcmp(key, "NELaunchX1.domainName") == 0 ||
++			   strcmp(key, "ipv6Support") == 0 ||
++			   strcmp(key, "pppFrameEncoded") == 0 ||
++			   strcmp(key, "PppPref") == 0 ||
++			   strcmp(key, "ExitAfterDisconnect") == 0 ||
++			   strcmp(key, "UninstallAfterExit") == 0 ||
++			   strcmp(key, "NoProfileCreate") == 0 ||
++			   strcmp(key, "AllowSavePassword") == 0 ||
++			   strcmp(key, "AllowSaveUser") == 0 ||
++			   strcmp(key, "AllowSavePasswordInKeychain") == 0 ||
++			   strcmp(key, "AllowSavePasswordInKeystore") == 0 ||
++			   strcmp(key, "ClientIPLower") == 0 ||
++			   strcmp(key, "ClientIPHigh") == 0) {
++			vpn_progress(vpninfo, PRG_TRACE, _("Ignoring known config key/value-pair: %s: %s\n"), key,
++				     value);
++		} else {
++			vpn_progress(vpninfo, PRG_DEBUG, _("Encountered unknown config key/value-pair: %s: %s\n"), key,
++				     value);
++		}
++		free(key);
++		free(value);
++	}
++	return 0;
++}
++
++static int nx_get_connection_info(struct openconnect_info *vpninfo)
++{
++	int ret = 0;
++	char *result_buf = NULL;
++	char *line, *line_break;
++	int line_len;
++	char *key, *value;
++	char url[70];
++	char const *support_ipv6 = (!vpninfo->disable_ipv6) ? "yes" : "no";
++	struct oc_vpn_option *new_opts = NULL;
++	struct oc_ip_info new_ip_info = {};
++
++	snprintf(url, sizeof(url), "cgi-bin/sslvpnclient?launchplatform=mac&neProto=3&supportipv6=%s", support_ipv6);
++	if (!vpninfo->cookies && vpninfo->cookie)
++		http_add_cookie(vpninfo, "swap", vpninfo->cookie, 1);
++	vpninfo->urlpath = url;
++	ret = do_https_request(vpninfo, "GET", NULL, NULL, &result_buf, NULL, 0);
++	vpninfo->urlpath = NULL;
++	if (ret < 0)
++		goto out;
++
++	if (!strstr(result_buf, "SessionId")) {
++		vpn_progress(vpninfo, PRG_ERR,
++			     _("Did not get the expected response to the NX connection info request\n"
++			       "Has the session expired?\n"));
++		ret = -EINVAL;
++		goto out;
++	}
++	line = result_buf;
++	while (line) {
++		line_break = strchr(line, '\n');
++		if (line_break)
++			*line_break = '\0';
++
++		line_len = (line_break) ? line_break - line : strlen(line);
++		ret = parse_connection_info_line(vpninfo, line, line_len, &key, &value);
++		if (ret) {
++			vpn_progress(vpninfo, PRG_DEBUG, _("Could not parse NX connection info line, ignoring: %s\n"),
++				     line);
++			ret = 0;
++		} else {
++			ret = populate_vpninfo(vpninfo, &new_opts, &new_ip_info,
++					       key, value);
++			if (ret)
++				goto out;
++		}
++		line = line_break ? (line_break + 1) : NULL;
++	}
++	ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info, 1);
++out:
++	if (ret) {
++		free_optlist(new_opts);
++                free_split_routes(&new_ip_info);
++	}
++	free(result_buf);
++	return ret;
++}
++
++/* Translate platform names (derived from AnyConnect) into the values
++ * known to be emitted by SonicWall NX clients for the X-NX-Client-Platform header
++ */
++static const char *nx_client_platform(struct openconnect_info *vpninfo)
++{
++	if (!strcmp(vpninfo->platname, "linux-64") || !strcmp(vpninfo->platname, "linux"))
++		return "Linux";
++	else if (!strcmp(vpninfo->platname, "android"))
++		return "Android";
++	else if (!strcmp(vpninfo->platname, "apple-ios"))
++		return "iOS";
++	else if (!strcmp(vpninfo->platname, "mac-intel"))
++		return "MacOS";
++	else
++		return "Windows";
++}
++
++int nx_connect(struct openconnect_info *vpninfo)
++{
++	int ret = -EINVAL;
++	struct oc_text_buf *reqbuf = NULL;
++	char *auth_token = NULL;
++	int auth_token_len = -1;
++	int ipv4 = 1;
++
++	if (!vpninfo->cookie) {
++		vpn_progress(vpninfo, PRG_ERR, _("Malformed cookie or no cookie given\n"));
++		return -EINVAL;
++	}
++
++	/* XX: Do we need to do this every time? Can't we skip it if this isn't
++	 * the first connection? E.g. if vpninfo->ppp already exists? */
++	ret = nx_get_connection_info(vpninfo);
++	if (ret) {
++		vpn_progress(vpninfo, PRG_ERR, _("Failed getting NX connection information\n"));
++		return -EINVAL;
++	}
++	auth_token = openconnect_base64_decode(&auth_token_len, vpninfo->cookie);
++	if (!auth_token) {
++		ret = auth_token_len;
++		goto out;
++	}
++	// TODO: get ECP (trojan) info from /cgi-bin/sslvpnclient?epcversionquery=nxx
++	ret = openconnect_open_https(vpninfo);
++	if (ret)
++		goto out;
++
++	reqbuf = buf_alloc();
++	if (!reqbuf) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	buf_append(reqbuf, "CONNECT localhost:0 HTTP/1.0\r\n");
++	buf_append(reqbuf, "X-SSLVPN-PROTOCOL: 2.0\r\n");
++	buf_append(reqbuf, "X-SSLVPN-SERVICE: NETEXTENDER\r\n");
++	buf_append(reqbuf, "Connection-Medium: MacOS\r\n");
++	buf_append(reqbuf, "Frame-Encode: off\r\n");
++	buf_append(reqbuf, "X-NE-PROTOCOL: 2.0\r\n");
++	buf_append(reqbuf, "Proxy-Authorization: %.*s\r\n", auth_token_len, auth_token);
++	buf_append(reqbuf, "X-NX-Client-Platform: %s\r\n", nx_client_platform(vpninfo));
++	buf_append(reqbuf, "User-Agent: %s\r\n", vpninfo->useragent);
++	buf_append(reqbuf, "\r\n");
++	if ((ret = buf_error(reqbuf) != 0)) {
++		vpn_progress(vpninfo, PRG_ERR, _("Error creating HTTPS CONNECT request\n"));
++		goto out;
++	}
++	if (vpninfo->dump_http_traffic)
++		dump_buf(vpninfo, '>', reqbuf->data);
++	vpninfo->ssl_write(vpninfo, reqbuf->data, reqbuf->pos);
++
++	ret = openconnect_ppp_new(vpninfo, PPP_ENCAP_NX_HDLC, ipv4, vpninfo->ip_info.addr6 != NULL);
++
++out:
++	if (ret < 0)
++		openconnect_close_https(vpninfo, 0);
++	else {
++		ppp_start_tcp_mainloop(vpninfo);
++		monitor_fd_new(vpninfo, ssl);
++		monitor_read_fd(vpninfo, ssl);
++		monitor_except_fd(vpninfo, ssl);
++	}
++
++	buf_free(reqbuf);
++	free(auth_token);
++	return ret;
++}
++
++int nx_bye(struct openconnect_info *vpninfo, const char *reason)
++{
++	int ret = 0;
++	char *resp_buf = NULL;
++	struct oc_text_buf *request_body = NULL;
++	/* close tunnel */
++	openconnect_close_https(vpninfo, 0);
++
++	request_body = buf_alloc();
++	if (!request_body) {
++		ret = buf_error(request_body);
++		goto out;
++	}
++	append_opt(request_body, "userLogout", "1");
++	vpninfo->urlpath = strdup("cgi-bin/userLogout");
++	ret = do_https_request(vpninfo, "POST", "application/x-www-form-urlencoded", request_body, &resp_buf, NULL, 0);
++	free(vpninfo->urlpath);
++	vpninfo->urlpath = NULL;
++	if (ret < 0)
++		vpn_progress(vpninfo, PRG_ERR, _("Logout failed.\n"));
++	else {
++		ret = 0;
++		vpn_progress(vpninfo, PRG_INFO, _("Logout successful.\n"));
++	}
++
++out:
++	free(resp_buf);
++	buf_free(request_body);
++	return ret;
++}
+diff --git a/oncp.c b/oncp.c
+index 25354a1a..8aafce48 100644
+--- a/oncp.c
++++ b/oncp.c
+@@ -327,12 +327,12 @@ static const unsigned char kmp_tail[] = { 0x01, 0x00, 0x00, 0x00, 0x00,
+ static const unsigned char kmp_tail_out[] = { 0x01, 0x00, 0x00, 0x00, 0x01,
+ 					      0x00, 0x00, 0x00, 0x00, 0x00 };
+ static const unsigned char data_hdr[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-					  0x01, 0x2c, 0x01, 0x00, 0x00, 0x00,
++					  0x01, 0x2c, 0x01, 0x00, 0x00, 0x00, /* KMP message ID = 300 (0x12c) */
+ 					  0x01, 0x00, 0x00, 0x00, 0x00, 0x00 };
+ 
+ #ifdef HAVE_ESP
+ static const unsigned char esp_kmp_hdr[] = {
+-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x2e,
++	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x2e, /* KMP message ID = 302 (0x12e) */
+ 	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, /* KMP header */
+ 	0x00, 0x56, /* KMP length */
+ 	0x00, 0x07, 0x00, 0x00, 0x00, 0x50, /* TLV group 7 */
+@@ -347,14 +347,14 @@ static const unsigned char esp_kmp_part2[] = {
+ static const struct pkt esp_enable_pkt = {
+ 	.next = NULL,
+ 	{ .oncp = { .rec = { 0x21, 0x00 },
+-	            .kmp = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x2f,
++	            .kmp = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x2f, /* KMP message ID = 303 (0x12f), len = 13 (0x0d) */
+ 			     0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+ 			     0x00, 0x00, 0x00, 0x0d } }
+ 	},
+ 	.data = {
+ 		0x00, 0x06, 0x00, 0x00, 0x00, 0x07, /* Group 6, len 7 */
+ 		0x00, 0x01, 0x00, 0x00, 0x00, 0x01, /* Attr 1, len 1 */
+-		0x01
++		0x01				    /* Value (1 to enable ESP, 0 to disable) */
+ 	},
+ 	.len = 13
+ };
+@@ -452,7 +452,7 @@ static int parse_conf_pkt(struct openconnect_info *vpninfo, unsigned char *bytes
+ 	if (split_enc_hmac_keys)
+ 		memcpy(vpninfo->esp_out.hmac_key, vpninfo->esp_out.enc_key + vpninfo->enc_key_len, vpninfo->hmac_key_len);
+ 
+-	int ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info);
++	int ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info, 0);
+ 	if (ret) {
+ 		free_optlist(new_opts);
+ 		free_split_routes(&new_ip_info);
+diff --git a/openconnect-internal.h b/openconnect-internal.h
+index f19b4d81..92e9c414 100644
+--- a/openconnect-internal.h
++++ b/openconnect-internal.h
+@@ -256,6 +256,7 @@ struct pkt {
+ #define PROTO_FORTINET		5
+ #define PROTO_NULLPPP		6
+ #define PROTO_ARRAY		7
++#define PROTO_NX		8
+ 
+ /* All supported PPP packet framings/encapsulations */
+ #define PPP_ENCAP_RFC1661	1	/* Plain/synchronous/pre-framed PPP (RFC1661) */
+@@ -263,7 +264,8 @@ struct pkt {
+ #define PPP_ENCAP_F5		3	/* F5 BigIP no HDLC */
+ #define PPP_ENCAP_F5_HDLC	4	/* F5 BigIP HDLC */
+ #define PPP_ENCAP_FORTINET	5	/* Fortinet no HDLC */
+-#define PPP_ENCAP_MAX		PPP_ENCAP_FORTINET
++#define PPP_ENCAP_NX_HDLC	6	/* SonicWall NetExtender HDLC */
++#define PPP_ENCAP_MAX		PPP_ENCAP_NX_HDLC
+ 
+ #define COMPR_DEFLATE	(1<<0)
+ #define COMPR_LZS	(1<<1)
+@@ -803,6 +805,16 @@ struct openconnect_info {
+ 
+ 	int verbose;
+ 	void *cbdata;
++	union {
++		struct nx_proto_data {
++			char *message;
++			int password_expiration_days;
++			char may_change_password;
++			char token_auth;
++			char saml_auth;
++			char pda;
++		} nx;
++	} proto_data;
+ 	openconnect_validate_peer_cert_vfn validate_peer_cert;
+ 	openconnect_write_new_config_vfn write_new_config;
+ 	openconnect_open_webview_vfn open_webview;
+@@ -1241,7 +1253,7 @@ int script_config_tun(struct openconnect_info *vpninfo, const char *reason);
+ int apply_script_env(struct oc_vpn_option *envs);
+ void free_split_routes(struct oc_ip_info *ip_info);
+ int install_vpn_opts(struct openconnect_info *vpninfo, struct oc_vpn_option *opt,
+-		     struct oc_ip_info *ip_info);
++		     struct oc_ip_info *ip_info, int allow_no_ip);
+ 
+ /* vhost.h */
+ int setup_vhost(struct openconnect_info *vpninfo, int tun_fd);
+@@ -1331,6 +1343,12 @@ void oncp_esp_close(struct openconnect_info *vpninfo);
+ int oncp_esp_send_probes(struct openconnect_info *vpninfo);
+ int oncp_esp_catch_probe(struct openconnect_info *vpninfo, struct pkt *pkt);
+ 
++/* nx.c */
++int nx_obtain_cookie(struct openconnect_info *vpninfo);
++void nx_common_headers(struct openconnect_info *vpninfo, struct oc_text_buf *buf);
++int nx_connect(struct openconnect_info *vpninfo);
++int nx_bye(struct openconnect_info *vpninfo, const char *reason);
++
+ /* pulse.c */
+ int pulse_obtain_cookie(struct openconnect_info *vpninfo);
+ void pulse_common_headers(struct openconnect_info *vpninfo, struct oc_text_buf *buf);
+diff --git a/ppp.c b/ppp.c
+index baa55fda..319c3541 100644
+--- a/ppp.c
++++ b/ppp.c
+@@ -173,6 +173,7 @@ static const char * const encap_names[PPP_ENCAP_MAX+1] = {
+ 	"F5",
+ 	"F5 HDLC",
+ 	"FORTINET",
++	"NX HDLC",
+ };
+ 
+ static const char * const lcp_names[] = {
+@@ -278,6 +279,12 @@ int ppp_reset(struct openconnect_info *vpninfo)
+ 		ppp->hdlc = 1;
+ 		break;
+ 
++	case PPP_ENCAP_NX_HDLC:
++		ppp->encap_len = 4;
++		ppp->hdlc = 1;
++		ppp->check_http_response = 1;
++		break;
++
+ 	case PPP_ENCAP_RFC1661:
+ 		ppp->encap_len = 0;
+ 		break;
+@@ -1198,6 +1205,7 @@ static int ppp_mainloop(struct openconnect_info *vpninfo, int dtls,
+ 
+ 		case PPP_ENCAP_F5_HDLC:
+ 		case PPP_ENCAP_RFC1662_HDLC:
++		case PPP_ENCAP_NX_HDLC:
+ 			payload_len = unhdlc_in_place(vpninfo, eh + ppp->encap_len, len - ppp->encap_len, &next);
+ 			if (payload_len < 0)
+ 				continue; /* unhdlc_in_place already logged */
+@@ -1481,6 +1489,9 @@ static int ppp_mainloop(struct openconnect_info *vpninfo, int dtls,
+ 			store_be16(eh + 2, 0x5050);
+ 			store_be16(eh + 4, this->len + this->ppp.hlen);
+ 			break;
++		case PPP_ENCAP_NX_HDLC:
++			store_be32(eh, this->len + this->ppp.hlen);
++			break;
+ 		}
+ 		this->ppp.hlen += ppp->encap_len;
+ 
+diff --git a/pulse.c b/pulse.c
+index 7cb216d2..a204adde 100644
+--- a/pulse.c
++++ b/pulse.c
+@@ -501,6 +501,16 @@ static int process_attr(struct openconnect_info *vpninfo, struct oc_vpn_option *
+ 		add_option_dup(new_opts, "gateway6", buf, -1);
+ 		break;
+ 
++	case 0x4009:
++		vpn_progress(vpninfo, PRG_INFO,
++			     _("Received proxy auto-config (PAC) payload of size %d\n"), attrlen);
++		break;
++
++	case 0x4023:
++		vpn_progress(vpninfo, PRG_INFO,
++			     _("Received proxy auto-config (PAC) URL: %.*s\n"), attrlen, data);
++		break;
++
+ 	case 0x4024:
+ 	        /* This flag is supposed to be available starting with Pulse server 9.1R9 (see
+ 		 * https://help.ivanti.com/ps/legacy/pcs/9.1rx/9.1r9/ps-pcs-sa-9.1r9.0-releasenotes.pdf),
+@@ -1612,6 +1622,11 @@ static int pulse_authenticate(struct openconnect_info *vpninfo, int connecting)
+ 	buf_append_avp_string(reqbuf, 0xd6c, "\x02\xe9\xa7\x51\x92\x4e");
+ 	buf_append_avp_be32(reqbuf, 0xd84, 0);
+ #else
++	/* XX: We don't actually know what string the Pulse clients send for OSes other than
++	 * Windows, but Windows/Linux/Mac (like GP clients use) seems likely.
++	 */
++	buf_append_avp_string(reqbuf, 0xd5e, gpst_os_name(vpninfo));
++
+ 	/* XX: "Only the Pulse client supports IPv6", both according to user reports and
+ 	 * https://help.ivanti.com/ps/help/en_US/PCS/9.1R14/ag/network_n_host_admin.htm#network_and_host_administration_1399867268_681155
+ 	 *
+@@ -2521,7 +2536,7 @@ static int handle_main_config_packet(struct openconnect_info *vpninfo,
+ 	if (handle_attr_elements(vpninfo, p, l, &new_opts, &new_ip_info) < 0)
+ 		goto bad_config;
+ 
+-	int ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info);
++	int ret = install_vpn_opts(vpninfo, new_opts, &new_ip_info, 0);
+ 	if (ret) {
+ 		free_optlist(new_opts);
+ 		free_split_routes(&new_ip_info);
+@@ -2633,7 +2648,7 @@ static int handle_esp_config_packet(struct openconnect_info *vpninfo,
+ int pulse_connect(struct openconnect_info *vpninfo)
+ {
+ 	struct oc_text_buf *reqbuf;
+-	unsigned char bytes[TLS_RECORD_MAX];
++	unsigned char *bytes = NULL;
+ 	int ret;
+ 
+ 	/* If we already have a channel open, it's because we have just
+@@ -2645,25 +2660,49 @@ int pulse_connect(struct openconnect_info *vpninfo)
+ 	}
+ 
+ 	while (1) {
+-		uint32_t pkt_type;
++		uint32_t pkt_type, config_len;
+ 
+-		ret = recv_ift_packet(vpninfo, (void *)bytes, sizeof(bytes));
+-		if (ret < 0)
+-			return ret;
++	next_pkt:
++		free(bytes);
++		config_len = TLS_RECORD_MAX;
++		bytes = malloc(config_len);
+ 
+-		if (ret < 16 || load_be32(bytes + 8) != ret) {
+-			vpn_progress(vpninfo, PRG_ERR,
+-				     _("Bad IF-T/TLS packet when expecting configuration:\n"));
+-			dump_buf_hex(vpninfo, PRG_ERR, '<', bytes, ret);
+-			return -EINVAL;
+-		}
++		for (int ii = 0; ii < config_len; ii += ret) {
++			if (!bytes)
++				return -ENOMEM;
+ 
+-		if (load_be32(bytes) != VENDOR_JUNIPER) {
+-			vpn_progress(vpninfo, PRG_INFO,
+-				     _("Unexpected IF-T/TLS packet when expecting configuration: wrong vendor\n"));
+-		bad_pkt:
+-			dump_buf_hex(vpninfo, PRG_DEBUG, '<', bytes, ret);
+-			continue;
++			ret = recv_ift_packet(vpninfo, bytes + ii, MAX(config_len - ii, TLS_RECORD_MAX));
++			if (ret < 0)
++				goto out;
++
++			if (ii == 0) {
++				/* Check header, and reallocate if it exceeds one TLS record */
++				if (ret < 16) {
++					vpn_progress(vpninfo, PRG_ERR,
++						     _("Short IF-T/TLS packet when expecting configuration:\n"));
++					dump_buf_hex(vpninfo, PRG_ERR, '<', bytes, ret);
++					ret = -EINVAL;
++					goto out;
++				}
++
++				if (load_be32(bytes) != VENDOR_JUNIPER) {
++					vpn_progress(vpninfo, PRG_INFO,
++						     _("Unexpected IF-T/TLS packet when expecting configuration: wrong vendor\n"));
++				bad_pkt:
++					dump_buf_hex(vpninfo, PRG_DEBUG, '<', bytes, ret);
++					goto next_pkt;
++				}
++
++				config_len = load_be32(bytes + 8);
++				if (config_len > 0x100000) {
++					vpn_progress(vpninfo, PRG_ERR,
++						     _("Unreasonably large IF-T/TLS packet (%u > 1 MiB) when expecting configuration"),
++						     config_len);
++					ret = -EINVAL;
++					goto out;
++				} else if (config_len > TLS_RECORD_MAX)
++					realloc_inplace(bytes, config_len);
++			}
+ 		}
+ 
+ 		pkt_type = load_be32(bytes + 4);
+@@ -2687,7 +2726,7 @@ int pulse_connect(struct openconnect_info *vpninfo)
+ 				     _("Unexpected Pulse configuration packet: %s\n"),
+ 				     _("wrong type field (!= 1)"));
+ 			goto bad_pkt;
+-		} else if (ret < 0x2c) {
++		} else if (config_len < 0x2c) {
+ 			vpn_progress(vpninfo, PRG_INFO,
+ 				     _("Unexpected Pulse configuration packet: %s\n"),
+ 				     _("too short"));
+@@ -2699,7 +2738,7 @@ int pulse_connect(struct openconnect_info *vpninfo)
+ 				     _("Unexpected Pulse configuration packet: %s\n"),
+ 				     _("non-zero values at offsets 0x10, 0x14, 0x18, 0x1c, or 0x24"));
+ 			goto bad_pkt;
+-		} else if (load_be32(bytes + 0x28) != ret - 0x10) {
++		} else if (load_be32(bytes + 0x28) != config_len - 0x10) {
+ 			vpn_progress(vpninfo, PRG_INFO,
+ 				     _("Unexpected Pulse configuration packet: %s\n"),
+ 				     _("length at offset 0x28 != packet length - 0x10"));
+@@ -2709,14 +2748,14 @@ int pulse_connect(struct openconnect_info *vpninfo)
+ 		switch(load_be32(bytes + 0x20)) {
+ 		case 0x2c20f000:
+ 		case 0x2e20f000: /* Variant seen on Pulse 9.1R14 */
+-			ret = handle_main_config_packet(vpninfo, bytes, ret);
++			ret = handle_main_config_packet(vpninfo, bytes, config_len);
+ 			if (ret)
+-				return ret;
++				goto out;
+ 
+ 			break;
+ 
+ 		case 0x21202400:
+-			ret = handle_esp_config_packet(vpninfo, bytes, ret);
++			ret = handle_esp_config_packet(vpninfo, bytes, config_len);
+ 			if (ret) {
+ 				vpninfo->dtls_state = DTLS_DISABLED;
+ 				continue;
+@@ -2725,7 +2764,7 @@ int pulse_connect(struct openconnect_info *vpninfo)
+ 			/* It has created a response packet to send. */
+ 			ret = send_ift_bytes(vpninfo, bytes, load_be32(bytes + 8));
+ 			if (ret)
+-				return ret;
++				goto out;
+ 
+ 			/* Tell server to enable ESP handling */
+ 			reqbuf = buf_alloc();
+@@ -2734,7 +2773,7 @@ int pulse_connect(struct openconnect_info *vpninfo)
+ 			ret = send_ift_packet(vpninfo, reqbuf);
+ 			buf_free(reqbuf);
+ 			if (ret)
+-				return ret;
++				goto out;
+ 
+ 			break;
+ 
+@@ -2749,12 +2788,15 @@ int pulse_connect(struct openconnect_info *vpninfo)
+ 	if (!vpninfo->ip_info.mtu ||
+ 	    (!vpninfo->ip_info.addr && !vpninfo->ip_info.addr6)) {
+ 		vpn_progress(vpninfo, PRG_ERR, _("Insufficient configuration found\n"));
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto out;
+ 	}
+ 
+ 	/* This should never happen, but be defensive and shut Coverity up */
+-	if (vpninfo->ssl_fd == -1)
+-		return -EIO;
++	if (vpninfo->ssl_fd == -1) {
++		ret = -EIO;
++		goto out;
++	}
+ 
+ 	ret = 0;
+ 	monitor_fd_new(vpninfo, ssl);
+@@ -2764,6 +2806,8 @@ int pulse_connect(struct openconnect_info *vpninfo)
+ 	free_pkt(vpninfo, vpninfo->cstp_pkt);
+ 	vpninfo->cstp_pkt = NULL;
+ 
++ out:
++	free(bytes);
+ 	return ret;
+ }
+ 

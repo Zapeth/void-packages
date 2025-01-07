@@ -1,0 +1,14 @@
+diff --git a/toolkit/moz.configure b/toolkit/moz.configure
+index a424446..69eadc3 100644
+--- a/toolkit/moz.configure
++++ b/toolkit/moz.configure
+@@ -813,8 +813,7 @@ option("--disable-jxl", help="Disable jxl image support")
+ 
+ @depends("--disable-jxl", milestone.is_nightly)
+ def jxl(value, is_nightly):
+-    if is_nightly and value:
+-        return True
++    return True
+ 
+ 
+ set_config("MOZ_JXL", jxl)

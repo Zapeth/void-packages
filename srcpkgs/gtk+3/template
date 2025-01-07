@@ -53,7 +53,8 @@ desc_option_broadway="Enable support for the HTML5 Broadway backend"
 desc_option_cloudproviders="Enable integration with cloudproviders, such as Nextcloud"
 
 # Enable all options (other than cloudproviders) by default.
-build_options_default="colord cups gir broadway wayland x11"
+#build_options_default="colord cups gir broadway wayland x11"
+build_options_default="colord gir broadway wayland"
 if [ -z "$CROSS_BUILD" ]; then
 	build_options_default+=" gtk_doc"
 fi

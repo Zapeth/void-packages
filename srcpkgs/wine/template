@@ -20,7 +20,7 @@ checksum="a09019ce5c42ba06ba91ec423d49d8f2a9a8eac4c1a9230c73e1d119639d5e92
 # check for updates to these packages when updating wine
 
 build_options="mingw staging xshm wow64"
-build_options_default="mingw xshm"
+build_options_default="mingw staging xshm wow64"
 desc_option_mingw="Use the MinGW cross compiler to build WinPE DLLs"
 desc_option_staging="Apply the wine-staging patchset"
 desc_option_xshm="Enable support for the X Shared Memory Extension"
@@ -95,6 +95,8 @@ fi
 post_patch() {
 	if [ "${build_option_staging}" ]; then
 		"../wine-staging-${_pkgver}/staging/patchinstall.py" --all
+		# server-Stored_ACLs patchset doesnt cleanly apply for v9.13
+		#"../wine-staging-${_pkgver}/staging/patchinstall.py" --all -W server-Stored_ACLs
 	fi
 }
 

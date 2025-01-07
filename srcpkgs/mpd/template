@@ -4,11 +4,11 @@ version=0.23.15
 revision=4
 build_style=meson
 configure_args="-Dopus=enabled -Dmikmod=enabled -Dneighbor=true
- -Dsoundcloud=enabled -Dpipe=true -Dtwolame=enabled -Dbzip2=enabled
+ -Dsoundcloud=disabled -Dpipe=true -Dtwolame=disabled -Dbzip2=enabled
  -Dzzip=enabled -Dsmbclient=disabled -Dsystemd=disabled -Dqobuz=disabled
  -Dchromaprint=disabled -Dsoxr=enabled -Dadplug=disabled
  -Dfluidsynth=disabled -Dgme=disabled -Dwildmidi=disabled -Dsidplay=disabled
- -Dshine=disabled -Ddocumentation=enabled -Daudiofile=enabled -Dtremor=disabled
+ -Dshine=disabled -Ddocumentation=disabled -Daudiofile=enabled -Dtremor=disabled
  -Dsolaris_output=disabled -Dhtml_manual=false -Dmanpages=true
  $(vopt_feature jack jack) $(vopt_feature lame lame) $(vopt_feature libao ao)
  $(vopt_feature mpcdec mpcdec) $(vopt_feature sndio sndio)
@@ -21,7 +21,7 @@ hostmakedepends="pkg-config python3-Sphinx"
 makedepends="avahi-glib-libs-devel boost-devel faad2-devel ffmpeg6-devel
  libcurl-devel libid3tag-devel libmad-devel libmikmod-devel libmms-devel
  libmodplug-devel libmpdclient-devel libnfs-devel libsamplerate-devel
- libnpupnp-devel mpg123-devel opus-devel yajl-devel pcre2-devel icu-devel
+ libnpupnp-devel mpg123-devel opus-devel pcre2-devel icu-devel
  zziplib-devel libsoxr-devel audiofile-devel twolame-devel fmt-devel
  $(vopt_if io_uring 'liburing-devel') $(vopt_if pipewire 'pipewire-devel')
  $(vopt_if cdio 'libcdio-paranoia-devel') $(vopt_if shoutcast 'libshout-devel')
@@ -57,7 +57,8 @@ desc_option_openal="Enable OpenAL output plugin"
 desc_option_io_uring="Enable support for using liburing"
 desc_option_pipewire="Enable Pipewire output plugin"
 desc_option_openmpt="Enable OpenMPT decoder plugin"
-build_options_default="jack pulseaudio libao sndio cdio shoutcast pipewire"
+#build_options_default="jack pulseaudio libao sndio cdio shoutcast pipewire"
+build_options_default="jack libao pipewire"
 
 if [ "$XBPS_CHECK_PKGS" ]; then
 	configure_args+=" -Dtest=true"

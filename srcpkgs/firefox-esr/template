@@ -3,7 +3,7 @@
 # THIS PKG MUST BE SYNCHRONIZED WITH "srcpkgs/firefox-esr-i18n".
 #
 pkgname=firefox-esr
-version=128.3.1
+version=128.9.0
 revision=1
 build_helper="rust"
 short_desc="Mozilla Firefox web browser - Extended Support Release"
@@ -11,26 +11,28 @@ maintainer="Orphaned <orphan@voidlinux.org>"
 license="MPL-2.0, GPL-2.0-or-later, LGPL-2.1-or-later"
 homepage="https://www.mozilla.org/firefox/"
 distfiles="${MOZILLA_SITE}/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz"
-checksum=c1f4052f3a88d96a122551d5025053304007f7649886d5e2fdfd1a11ce3d70a8
+checksum=4d04661c6cc0bfdd0f280b62f81d2fb79ab3cbd7f9e8a7b34042db1cf8cc6805
 
 lib32disabled=yes
 
+_llvmver=19
 hostmakedepends="autoconf213 unzip zip pkg-config perl python3 yasm rust
- cargo llvm18 clang18 lld18 nodejs cbindgen nasm which tar"
+ cargo llvm${_llvmver} clang${_llvmver} lld${_llvmver} nodejs cbindgen nasm which tar"
+# cargo llvm18 clang18 lld18 nodejs cbindgen nasm which tar"
 makedepends="nss-devel libjpeg-turbo-devel gtk+3-devel icu-devel
  pixman-devel libevent-devel libnotify-devel libvpx-devel libwebp-devel
- libXrender-devel libXcomposite-devel libSM-devel libXt-devel rust-std
- libXdamage-devel freetype-devel
+ rust-std freetype-devel
  $(vopt_if alsa alsa-lib-devel) $(vopt_if dbus dbus-glib-devel)
  $(vopt_if pulseaudio pulseaudio-devel) $(vopt_if xscreensaver libXScrnSaver-devel)
  $(vopt_if sndio sndio-devel) $(vopt_if jack jack-devel)"
-depends="nss>=3.72 nspr>=4.32 desktop-file-utils hicolor-icon-theme"
+#libXrender-devel libXcomposite-devel libXt-devel libSM-devel libXdamage-devel
+depends="nss>=3.101 nspr>=4.35 desktop-file-utils hicolor-icon-theme libfido2"
 conflicts="firefox>=0"
 replaces="firefox>=0"
 provides="firefox-${version}_${revision}"
 
 build_options="alsa jack dbus pulseaudio xscreensaver sndio wayland lto clang"
-build_options_default="alsa jack dbus pulseaudio xscreensaver sndio wayland clang"
+build_options_default="alsa jack dbus pulseaudio wayland lto clang"
 
 desc_option_lto="Enable Link Time Optimization"
 desc_option_clang="Build with clang"
@@ -80,6 +82,8 @@ do_build() {
 			exec clang \
 				--target="${XBPS_CROSS_TRIPLET}" \
 				--sysroot="${XBPS_CROSS_BASE}" \
+			        --gcc-toolchain=/usr \
+			        -isystem "${XBPS_CROSS_BASE}/usr/include" \
 				"\$@"
 			!
 
@@ -88,6 +92,11 @@ do_build() {
 			exec clang++ \
 				--target="${XBPS_CROSS_TRIPLET}" \
 				--sysroot="${XBPS_CROSS_BASE}" \
+			        --gcc-toolchain=/usr \
+			        -isystem "${XBPS_CROSS_BASE}/usr/include/c++/${gcc_version%.*}" \
+			        -isystem "${XBPS_CROSS_BASE}/usr/include/c++/${gcc_version%.*}/${XBPS_CROSS_TRIPLET}" \
+			        -isystem "${XBPS_CROSS_BASE}/usr/include/c++/${gcc_version%.*}/backward" \
+			        -isystem "${XBPS_CROSS_BASE}/usr/include" \
 				"\$@"
 			!
 
@@ -105,8 +114,9 @@ do_build() {
 	fi
 
 	export AS="${CC}"
-	export CFLAGS="-O2"
-	export CXXFLAGS="-O2"
+	export CFLAGS="-O3 -march=sandybridge"
+	export CXXFLAGS="-O3 -march=sandybridge"
+	export RUSTC_OPT_LEVEL=3
 	export HOST_CFLAGS=""
 	export HOST_CXXFLAGS=""
 	export LDFLAGS="-Wl,-rpath=/usr/lib/firefox"
@@ -159,16 +169,20 @@ do_build() {
 	ac_add_options --enable-release
 	ac_add_options --enable-hardening
 	ac_add_options --enable-optimize="\${CFLAGS}"
+	ac_add_options --enable-rust-simd
 	ac_add_options --enable-path-remapping=c,rust
 	ac_add_options --disable-tests
 	ac_add_options --disable-crashreporter
 	ac_add_options --disable-updater
-	ac_add_options --disable-install-strip
-	ac_add_options --disable-strip
+	#ac_add_options --disable-install-strip
+	#ac_add_options --disable-strip
+	ac_add_options --disable-debug-symbols
 	ac_add_options --disable-profiling
 	$(disable_jemalloc)
 	$(disable_elfhack)
 	$(disable_webrtc)
+	unset MOZ_TELEMETRY_REPORTING
+	export LDFLAGS="$LDFLAGS -Wl,-z,pack-relative-relocs"
 
 	# XXX: wasi currently not ready
 	# ac_add_options --with-wasi-sysroot=/usr/share/wasi-sysroot
@@ -199,7 +213,16 @@ do_build() {
 	ac_add_options $(vopt_enable jack)
 	ac_add_options $(vopt_enable pulseaudio)
 	ac_add_options $(vopt_enable sndio)
-	ac_add_options --enable-default-toolkit=$(vopt_if wayland 'cairo-gtk3-wayland' 'cairo-gtk3')
+	ac_add_options --enable-default-toolkit=$(vopt_if wayland 'cairo-gtk3-wayland-only' 'cairo-gtk3')
+
+	ac_add_options --disable-webspeech
+	ac_add_options --disable-accessibility
+	ac_add_options --disable-parental-controls
+	# tocheck
+	#ac_add_options --disable-universalchardet
+	#ac_add_options --disable-zipwriter
+	#ac_add_options --disable-legacy-profile-creation
+	#ac_add_options --enable-jemalloc
 
 	MOZ_APP_REMOTINGNAME=Firefox
 	!
@@ -229,8 +252,8 @@ do_install() {
 	export MOZBUILD_STATE_PATH="${wrksrc}/mozbuild"
 	DESTDIR="$DESTDIR" ./mach install
 
-	vinstall ${FILESDIR}/vendor.js 644 usr/lib/firefox/browser/defaults/preferences
-	vinstall taskcluster/docker/firefox-snap/firefox.desktop 644 usr/share/applications
+	vinstall "${FILESDIR}/vendor.js" 644 usr/lib/firefox/browser/defaults/preferences
+	#vinstall "${FILESDIR}/firefox.desktop" 644 usr/share/applications
 
 	for i in 16x16 22x22 24x24 32x32 48x48 128x128 256x256; do
 		vinstall ${wrksrc}/browser/branding/official/default${i%x*}.png 644 \
@@ -243,5 +266,5 @@ do_install() {
 	# https://bugzilla.mozilla.org/show_bug.cgi?id=658850
 	ln -sf firefox ${DESTDIR}/usr/lib/firefox/firefox-bin
 
-	vbin ${FILESDIR}/firefox-wayland
+	#vbin ${FILESDIR}/firefox-wayland
 }

@@ -3,7 +3,8 @@ pkgname=mpv
 version=0.39.0
 revision=2
 build_style=meson
-configure_args="-Dcdda=enabled -Ddvbin=enabled -Ddvdnav=enabled
+#configure_args="-Dcdda=enabled -Ddvbin=enabled -Ddvdnav=enabled
+configure_args="-Dcdda=disabled -Ddvbin=disabled -Ddvdnav=disabled
  -Dlibmpv=true -Dcplugins=enabled
  $(vopt_feature alsa alsa)
  $(vopt_feature caca caca)
@@ -23,11 +24,11 @@ configure_args="-Dcdda=enabled -Ddvbin=enabled -Ddvdnav=enabled
  $(vopt_feature sndio sndio)"
 hostmakedepends="pkg-config python3-docutils $(vopt_if wayland wayland-devel)"
 makedepends="MesaLib-devel ffmpeg6-devel harfbuzz-devel libXv-devel libass-devel
- libbluray-devel libcdio-paranoia-devel libdvdnav-devel libuuid-devel
+ libuuid-devel
  libva-devel rubberband-devel uchardet-devel libplacebo-devel libarchive-devel
  $(vopt_if alsa alsa-lib-devel) $(vopt_if caca libcaca-devel)
  $(vopt_if jack jack-devel) $(vopt_if javascript mujs-devel) $(vopt_if lcms lcms2-devel)
- $(vopt_if lua lua52-devel) $(vopt_if openal libopenal-devel)
+ $(vopt_if lua lua54-devel) $(vopt_if openal libopenal-devel)
  $(vopt_if pulseaudio pulseaudio-devel) $(vopt_if pipewire pipewire-devel)
  $(vopt_if sdl2 SDL2-devel) $(vopt_if vapoursynth vapoursynth-devel)
  $(vopt_if vdpau libvdpau-devel) $(vopt_if sndio sndio-devel)
@@ -46,8 +47,9 @@ python_version=3
 
 build_options="alsa caca jack javascript lcms lua openal pulseaudio pipewire sdl2
  sndio vapoursynth vdpau vulkan wayland x11"
-build_options_default="alsa jack javascript lcms lua pulseaudio pipewire vdpau vulkan
- sndio wayland x11"
+#build_options_default="alsa jack javascript lcms lua pulseaudio pipewire vdpau vulkan
+# sndio wayland x11"
+build_options_default="alsa jack lcms lua pipewire vulkan wayland"
 desc_option_caca="Enable support for libcaca video output"
 desc_option_lcms="Enable support for LittleCMS 2 engine"
 desc_option_openal="Enable support for OpenAL audio output"

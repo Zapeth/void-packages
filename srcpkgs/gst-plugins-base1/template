@@ -4,7 +4,8 @@ version=1.24.11
 revision=1
 build_style=meson
 build_helper="gir"
-configure_args="-Dtremor=disabled -Dexamples=disabled -Ddoc=disabled
+configure_args="-Dtremor=disabled -Dexamples=disabled -Ddoc=disabled -Dlibvisual=disabled
+ -Dc_args=-march=sandybridge -Dcpp_args=-march=sandybridge -Db_lto=true
  $(vopt_feature cdparanoia cdparanoia) $(vopt_feature gir introspection)
  $(vopt_feature sndio sndio) $(vopt_feature libvisual libvisual)"
 hostmakedepends="gettext pkg-config glib-devel orc $(vopt_if wayland wayland-devel)"
@@ -25,7 +26,7 @@ distfiles="https://gstreamer.freedesktop.org/src/gst-plugins-base/gst-plugins-ba
 checksum=98572c1f8b710e52673e250cd96e4f2660d79bd66aa172c5dde5f690c1231e1d
 
 build_options="cdparanoia gir libvisual sndio wayland"
-build_options_default="cdparanoia gir wayland"
+build_options_default="gir wayland"
 desc_option_libvisual="Enable audio visualization plugin"
 desc_option_sndio="Enable sndio support (unsupported, known to be problematic)"
 
