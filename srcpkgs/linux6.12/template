@@ -337,15 +337,15 @@ linux6.12-headers_package() {
 	}
 }
 
-linux6.12-dbg_package() {
-	preserve=yes
-	nostrip=yes
-	noverifyrdeps=yes
-	noshlibprovides=yes
-	repository=debug
-	short_desc+=" - debugging symbols"
-	pkg_install() {
-		vmove usr/lib/debug
-		vmove "boot/System.map-${_kernver}"
-	}
-}
+#linux6.12-dbg_package() {
+#	preserve=yes
+#	nostrip=yes
+#	noverifyrdeps=yes
+#	noshlibprovides=yes
+#	repository=debug
+#	short_desc+=" - debugging symbols"
+#	pkg_install() {
+#		vmove usr/lib/debug
+#		vmove "boot/System.map-${_kernver}"
+#	}
+#}
