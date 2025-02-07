@@ -1,0 +1,173 @@
+# General setup
+CONFIG_KERNEL_ZSTD=y    # Kernel compression mode -> ZSTD
+CONFIG_BLK_DEV_INITRD=n	# Initial RAM filesystem and RAM disk (initramfs/initrd) support
+CONFIG_BOOT_CONFIG=n	# Boot config support
+CONFIG_IKCONFIG=n       # Kernel .config support
+?CONFIG_CRASH_DUMP=n    # kernel crash dumps
+
+# Processor type and features
+?I:CONFIG_X86_INTEL_LPSS=n # Intel Low Power Subsystem Support
+?CONFIG_XEN=n       # Linux guest support -> Xen guest support
+?I:CONFIG_INTEL_TDX_GUEST=n # Linux guest support -> Intel TDX ...
+?CONFIG_GART_IOMMU=n # Ikd AND GART IOMMU support
+CONFIG_NR_CPUS=64	# Maximum number of CPUs
+?I:CONFIG_X86_MCE_INTEL=n # Intel MCE features
+CONFIG_X86_MCE_INJECT=n # Machine check injector support
+?CONFIG_NUMA=n		# NUMA Memory Allocation and Scheduler Support
+?I:CONFIG_X86_SGX=y # Software Guard eXtensions (SGX)
+?CONFIG_EFI_HANDOVER_PROTOCOL=n # EFI handover protocol
+?CONFIG_EFI_MIXED=n # EFI mixed-mode support
+
+# Power management and ACPI options
+CONFIG_CPU_FREQ_GOV_CONSERVATIVE=n # CPU Frequency scaling -> 'conservative' cpufreq governor
+?A:CONFIG_X86_ACPI_CPUFREQ_CPB=n # CPU Frequency scaling -> Legacy cpb sysfs knob ...
+A:CONFIG_X86_POWERNOW_K8=n # CPU Frequency scaling -> AMD Opteron/Athlon64 PowerNow!
+I:CONFIG_X86_P4_CLOCKMOD=n # CPU Frequency scaling -> Intel Pentium 4 clock modulation
+I:CONFIG_INTEL_IDLE=n # Cpuidle Driver for Intel Processors
+
+# Binary Emulations
+CONFIG_IA32_EMULATION=n	# IA32 Emulation
+
+# Virtualization
+I:CONFIG_KVM_INTEL=n # KVM for Intel (and compatible) processors support
+
+# General setup
+?CONFIG_MODULE_FORCE_LOAD=n # Enable loadable module support -> Forced module loading
+?CONFIG_MODULE_FORCE_UNLOAD=n # Enable loadable module support -> Forced module unloading
+?CONFIGMODULE_UNLOAD_TAIN_TRACKING=n # Enable loadable module support -> Tainted module unload tracking
+?MODULE_SIG_SHA256=y # Enable loadable module support -> Hash algorithm to sign modules -> SHA-256
+CONFIG_MODULE_COMPRESS_ZSTD=y # Enable loadable module support -> Module compression type -> ZSTD
+?CONFIG_MODULE_COMPRESS_ALL=y # Enable loadable module support -> Automatically compress all modules
+?CONFIG_TRIM_UNUSED_KSYMS=y # Enable loadable module support -> Trim unused exported kernel symbols
+
+# Enable the block layer -> Partition Types
+CONFIG_MAC_PARTITION=n # Macintosh partition map support
+CONFIG_BSD_DISKLABEL=n # BSD disklabel (FreeBSD partition tables) support
+CONFIG_MINIX_SUBPARTITION=n # Minix subpartition support
+CONFIG_SOLARIS_X86_PARTITION=n # Solaris (x86) partition table support
+
+# Memory Management options (TODO)
+CONFIG_ZSWAP_COMPRESSOR_DEFAULT_ZSTD=y # Support for paging of anonymous memory (swap)
+# Networking support (TODO)
+
+# Device Drivers (TODO)
+CONFIG_ATA=y		# (vbox) Serial ATA and Parallel ATA drivers (libata)
+CONFIG_SATA_AHCI=y	# (vbox) Serial ATA and Parallel ATA drivers (libata) -> AHCI SATA support
+#CONFIG_ATA_PIIX=y	# (vbox) Serial ATA and Parallel ATA drivers (libata) -> Intel ESB, ICH, PIIX3, PIIX4 PATA/SATA support
+CONFIG_BLK_DEV_SD=y	# (vbox) SCSI device support -> SCSI disk support
+?CONFIG_PCCARD=n # PCCard (PCMCIA/CardBus) support
+?CONFIG_RAPIDIO=n # RapidIO support
+?CONFIG_GNSS=n # GNSS receiver support
+I:CONFIG_INTEL_MEI=n # Misc devices -> Intel Management Engine Interface
+?CONFIG_FUSION=n # Fusion MPT device support
+CONFIG_FIREWIRE=n # IEEE 1394 (FireWire) support -> FireWire driver stack
+CONFIG_FIREFIRE_NOSY=n # IEEE 1394 (FireWire) support -> Nosy - a FireWire traffic ...
+?CONFIG_PARPORT=n # Parallel port support
+?CONFIG_MACINTOSH_DRIVERS=n # Macintosh device drivers
+?CONFIG_DRM_ACCEL=n # Compute Acceleration Framework (not related to nvidia/amd drivers?)
+?CONFIG_MEMSTICK=n # Sony MemoryStick card support
+CONFIG_INFINIBAND=n # InfiniBand support
+CONFIG_GREYBUS=n # Greybus support
+?CONFIG_COMEDI=n # Data acquisition support (comedi)
+?CONFIG_CHROME_PLATFORMS=n # Platform support for Chrome hardware
+?CONFIG_SURFACE_PLATFORMS=n # Microsoft Surface Platform-Specific Device Drivers
+?CONFIG_SOUNDWIRE=n # SoundWire support
+CONFIG_IPACK_BUS=n # IndustryPack bus support
+??CONFIG_IIO=n # Industrial I/O support
+?CONFIG_MCB=n # MCB support
+?CONFIG_MOST=n # MOST (Media Oriented Systems Transport) support
+?I:CONFIG_PECI=n # PECI support
+?CONFIG_MD=n # Multiple devices driver support (RAID and LVM)
+?CONFIG_TARGET_CORE=n # Generic Target Coder Mod (TCM) and ConfigFS Infrastructure
+CONFIG_SSB=n # Sonics Silicon Backplane support // disable B44,B43,B43LEGACY below first
+
+# Device Drivers -> Network device support
+?CONFIG_CAN_DEV=n # CAN Device Drivers
+
+# Device Drivers -> Network device support -> Ethernet driver support
+CONFIG_NET_VENDOR_3COM=n # 3Com devices
+CONFIG_NET_VENDOR_ADAPTEC=n # Adaptec devices
+CONFIG_NET_VENDOR_AGERE=n # Agere devices
+CONFIG_NET_VENDOR_ALACRITECH=n # Alacritech devices
+CONFIG_NET_VENDOR_ALTEON=n # Alteon devices
+CONFIG_ALTERA_TSE=n # Altera Triple-Speed Ethernet MAC support
+CONFIG_NET_VENDOR_AMAZON=n # Amazon Devices
+#...
+?CONFIG_B44=n # Broadcom 440x/47xx ethernet support
+#...
+CONFIG_CX_ECAT=n # Beckhoff CX5020 EtherCAT master support
+CONFIG_NET_VENDOR_CAVIUM=n # Cavium ethernet drivers
+CONFIG_NET_VENDOR_CADENCE=n # Cadence devices
+CONFIG_NET_VENDOR_CISCO=n # Cisco devices
+CONFIG_NET_VENDOR_CORTINA=n # Cortina Gemini devices
+CONFIG_NET_VENDOR_DAVICOM=n # Davicom devices
+CONFIG_DNET=n # Dave ethernet support (DNET)
+CONFIG_NET_VENDOR_DEC=n # Digital Equipment devices
+CONFIG_NET_VENDOR_EMULEX=n # Emulex devices
+#...
+CONFIG_NET_VENDOR_ADI=n # Analog Devices devices
+CONFIG_NET_VENDOR_LITEX=n # LiteX devices
+CONFIG_NET_VENDOR_MARVELL=n # Marvell devices
+CONFIG_NET_VENDOR_MELLANOX=n # Mellanox devices
+CONFIG_NET_VENDOR_META=n # Meta Platform devices
+CONFIG_NET_VENDOR_MICREL=n # Micrel devices
+CONFIG_NET_VENDOR_MICROCHIP=n # Microchip devices
+CONFIG_NET_VENDOR_MICROSEMI=n # Microsemi devices
+?CONFIG_NET_VENDOR_MICROSOFT=n # Microsoft Network Devices
+CONFIG_NET_VENDOR_MYRI=n # Myricom devices
+#...
+CONFIG_NET_VENDOR_QLOGIC=n # QLogic devices
+CONFIG_NET_VENDOR_BROCADE=n # QLogic BR-series devices
+#...
+CONFIG_NET_VENDOR_SOLARFLARE=n # Solarflare devices
+#...
+
+# Device Drivers -> Network device support -> Ethernet driver support
+#...
+?CONFIG_B43=n # Broadcom 43xx wireless support (mac80211 stack)
+CONFIG_B43LEGACY=n # Broadcom 43xx-legacy wireless support (mac80211 stack)
+#...
+CONFIG_WLAN_VENDOR_INTERSIL=n # Intersil devices
+CONFIG_WLAN_VENDOR_MARVELL=n # Marvell devices
+CONFIG_WLAN_VENDOR_MEDIATEK=n # MediaTek devices
+#...
+
+# Device Drivers -> Block devices
+#ZRAM_BACKEND_ZSTD=y # Compressed RAM block device support -> zstd compression support
+ZRAM_DEF_COMP_ZSTD=y # Compressed RAM block device support -> Default zram compressor (zstd)
+
+# Device Drivers -> Graphics Support -> Direct Rendering Manager ...
+CONFIG_DRM_I2C_CH7006=n # I2C encoder or helper chips -> Chrontel ch7006 TV encoder
+CONFIG_DRM_I2C_SIL164=n # I2C encoder or helper chips -> Silicon Image sil164 TMDS transmitter
+CONFIG_DRM_I2C_NXP_TDA998X=n # I2C encoder or helper chips -> NXP Semiconductors TDA998X HDMI encoder
+CONFIG_DRM_RADEON=n # ATI Radeon
+CONFIG_DRM_NOUVEAU=n # Nouveau (NVIDIA) cards
+I:CONFIG_DRM_I915=n # Intel 8xx/9xx/G3x/G4x/HD Graphics
+?CONFIG_DRM_AST=n # AST server chips
+?CONFIG_DRM_MGAG200=n # Matrox G200
+?CONFIG_DRM_QXL=n # QXL virtual GPU
+CONFIG_DRM_XE=n # Intel Xe Graphics
+CONFIG_DRM_GMA500=n # Intel GMA... KMS Framebuffer
+CONFIG_DRM_VKMS=n # Virtual KMS (EXPERIMENTAL)
+CONFIG_DRM_CIRRUS_QEMU=n # Cirrus driver for QEMU emulated device
+?CONFIG_DRM_GUD=n # GUD USB Display
+?CONFIG_DRM_SSD130X=n # DRM support for Solomon SSD13xx OLED displays
+
+# File systems (TODO)
+CONFIG_EXT4_FS=y	# The Extended 4 (ext4) filesystem
+
+# Security options (TODO)
+# Cryptographic API (TODO)
+# Library routines (TODO)
+
+# Kernel hacking (TODO)
+CONFIG_DEBUG_KERNEL=n	# Kernel debugging
+CONFIG_MAGIC_SYSRQ_SERIAL=n	# Generic Kernel Debugging Instruments -> Enable magic SysRq key over serial
+#?CONFIG_SLUB_DEBUG=n	# Memory Debugging -> Enable SLUB debugging support
+CONFIG_PAGE_POISONING=n	# Memory Debugging -> Poison pages after freeing
+?CONFIG_KFENCE=n	# Memory Debugging -> KFENCE: low-overhead ...
+CONFIG_SCHEDSTATS=n	# Scheduler Debugging -> Collect scheduler statistics
+?CONFIG_WW_MUTEX_SELFTEST=n	# Lock Debugging ... -> Wait/wound mutex selftests
+RUNTIME_TESTING_MENU=n	# Kernel Testing and Coverage -> Runtime Testing
+
+

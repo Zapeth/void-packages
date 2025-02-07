@@ -1,0 +1,31 @@
+# General setup
+CONFIG_BLK_DEV_INITRD=n	# Initial RAM filesystem and RAM disk (initramfs/initrd) support
+CONFIG_BOOT_CONFIG=n	# Boot config support
+
+# Processor type and features
+CONFIG_NR_CPUS=64	# Maximum number of CPUs
+?CONFIG_NUMA=n		# NUMA Memory Allocation and Scheduler Support
+
+# Binary Emulations
+CONFIG_IA32_EMULATION=n	# IA32 Emulation
+
+# Device Drivers
+CONFIG_ATA=y		# (vbox) Serial ATA and Parallel ATA drivers (libata)
+CONFIG_SATA_AHCI=y	# (vbox) Serial ATA and Parallel ATA drivers (libata) -> AHCI SATA support
+#CONFIG_ATA_PIIX=y	# (vbox) Serial ATA and Parallel ATA drivers (libata) -> Intel ESB, ICH, PIIX3, PIIX4 PATA/SATA support
+CONFIG_BLK_DEV_SD=y	# (vbox) SCSI device support -> SCSI disk support
+
+# File systems
+CONFIG_EXT4_FS=y	# The Extended 4 (ext4) filesystem
+
+# Kernel hacking
+CONFIG_DEBUG_KERNEL=n	# Kernel debugging
+CONFIG_MAGIC_SYSRQ_SERIAL=n	# Generic Kernel Debugging Instruments -> Enable magic SysRq key over serial
+#?CONFIG_SLUB_DEBUG=n	# Memory Debugging -> Enable SLUB debugging support
+CONFIG_PAGE_POISONING=n	# Memory Debugging -> Poison pages after freeing
+?CONFIG_KFENCE=n	# Memory Debugging -> KFENCE: low-overhead ...
+CONFIG_SCHEDSTATS=n	# Scheduler Debugging -> Collect scheduler statistics
+?CONFIG_WW_MUTEX_SELFTEST=n	# Lock Debugging ... -> Wait/wound mutex selftests
+RUNTIME_TESTING_MENU=n	# Kernel Testing and Coverage -> Runtime Testing
+
+
