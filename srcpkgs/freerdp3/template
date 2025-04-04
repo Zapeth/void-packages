@@ -1,6 +1,6 @@
 # Template file for 'freerdp3'
 pkgname=freerdp3
-version=3.14.0
+version=3.14.1
 revision=1
 build_style=cmake
 build_helper=qemu
@@ -21,17 +21,18 @@ configure_args="-Wno-dev -DCMAKE_BUILD_TYPE=Release
  -DWITH_XCURSOR=ON -DWITH_XEXT=ON -DWITH_XI=ON -DWITH_XINERAMA=ON -DWITH_XKBFILE=ON
  -DWITH_XRENDER=ON -DWITH_XV=ON -DUWAC_FORCE_STATIC_BUILD=$(vopt_if wayland ON OFF)
  -DWITH_AAD=$(vopt_if aad ON OFF) -DWITH_CAIRO=$(vopt_if ffmpeg OFF ON)
- -DWITH_CLIENT_SDL=$(vopt_if sdl2 ON OFF) -DWITH_DSP_FFMPEG=$(vopt_if ffmpeg ON OFF)
+ -DWITH_CLIENT_SDL=$(vopt_if sdl3 ON OFF) -DWITH_DSP_FFMPEG=$(vopt_if ffmpeg ON OFF)
  -DWITH_FFMPEG=$(vopt_if ffmpeg ON OFF) -DWITH_PCSC=$(vopt_if smartcard ON OFF)
  -DWITH_PKCS11=$(vopt_if smartcard ON OFF) -DWITH_SWSCALE=$(vopt_if ffmpeg ON OFF)
  -DWITH_WAYLAND=$(vopt_if wayland ON OFF) -DWITH_WEBVIEW=$(vopt_if webview ON OFF)
- -DWITH_CLIENT_SDL_VERSIONED=$(vopt_if sdl2 ON OFF) -DWITH_VERBOSE_WINPR_ASSERT=OFF"
+ -DWITH_CLIENT_SDL_VERSIONED=$(vopt_if sdl3 ON OFF) -DWITH_VERBOSE_WINPR_ASSERT=OFF
+ -DWITHOUT_FREERDP_3x_DEPRECATED=ON"
 hostmakedepends="pkg-config $(vopt_if wayland wayland-devel)"
 makedepends="alsa-lib-devel cups-devel fuse3-devel icu-devel libXcursor-devel
  libXdamage-devel libXinerama-devel libXrandr-devel libXv-devel
  libjpeg-turbo-devel libusb-devel libxkbfile-devel mit-krb5-devel openssl-devel
  pulseaudio-devel uriparser-devel $(vopt_if aad cJSON-devel)
- $(vopt_if ffmpeg ffmpeg6-devel cairo-devel) $(vopt_if sdl2 SDL2_ttf-devel)
+ $(vopt_if ffmpeg ffmpeg6-devel cairo-devel) $(vopt_if sdl3 SDL3_ttf-devel)
  $(vopt_if smartcard 'pcsclite-devel pkcs11-helper-devel')
  $(vopt_if wayland 'libxkbcommon-devel wayland-devel')
  $(vopt_if webview libwebkit2gtk41-devel)"
@@ -41,17 +42,17 @@ license="Apache-2.0"
 homepage="https://www.freerdp.com/"
 changelog="https://raw.githubusercontent.com/FreeRDP/FreeRDP/master/ChangeLog"
 distfiles="https://github.com/FreeRDP/FreeRDP/archive/${version}.tar.gz"
-checksum=a7a979382703c2bc18aa9b22cfa12d7a441b6927ab45ac62ef8353786bc92241
+checksum=8f4de354f51b5b957032446608bcc337a96f4c69928ba0c3b607a01417d694d9
 
-# wayland - deprecated, sdl2 - experimental
-build_options="aad ffmpeg sdl2 smartcard wayland webview"
-build_options_default="aad ffmpeg sdl2 smartcard"
+# wayland - deprecated, sdl3 - experimental
+build_options="aad ffmpeg sdl3 smartcard wayland webview"
+build_options_default="aad ffmpeg sdl3 smartcard"
 
 desc_option_aad="Compile with support for Azure AD authentication"
 desc_option_smartcard="Build with smartcard support"
 desc_option_webview="Build with WebView support for AAD login popup browser"
 
-if [ "$build_option_webview" -a -z "$build_option_sdl2" ]; then
+if [ "$build_option_webview" -a -z "$build_option_sdl3" ]; then
 	broken="WebView requires SDL"
 fi
 
